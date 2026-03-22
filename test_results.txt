@@ -1,0 +1,466 @@
+============================= test session starts =============================
+platform win32 -- Python 3.10.7, pytest-8.2.0, pluggy-1.6.0
+rootdir: C:\Users\visha\OneDrive\Desktop\routeiq\routeiq
+plugins: anyio-4.12.1, Faker-40.5.1, asyncio-0.23.6
+asyncio: mode=strict
+collected 4 items
+
+backend\tests\test_api.py .F..                                           [100%]
+
+================================== FAILURES ===================================
+___________________________ test_register_and_login ___________________________
+  + Exception Group Traceback (most recent call last):
+  |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\_utils.py", line 87, in collapse_excgroups
+  |     yield
+  |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\middleware\base.py", line 190, in __call__
+  |     async with anyio.create_task_group() as task_group:
+  |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\anyio\_backends\_asyncio.py", line 783, in __aexit__
+  |     raise BaseExceptionGroup(
+  | exceptiongroup.ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\_pytest\runner.py", line 341, in from_call
+    |     result: Optional[TResult] = func()
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\_pytest\runner.py", line 241, in <lambda>
+    |     lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\pluggy\_callers.py", line 167, in _multicall
+    |     raise exception
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\pluggy\_callers.py", line 139, in _multicall
+    |     teardown.throw(exception)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\_pytest\threadexception.py", line 87, in pytest_runtest_call
+    |     yield from thread_exception_runtest_hook()
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\_pytest\threadexception.py", line 63, in thread_exception_runtest_hook
+    |     yield
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\pluggy\_callers.py", line 139, in _multicall
+    |     teardown.throw(exception)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\_pytest\unraisableexception.py", line 90, in pytest_runtest_call
+    |     yield from unraisable_exception_runtest_hook()
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\_pytest\unraisableexception.py", line 65, in unraisable_exception_runtest_hook
+    |     yield
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\pluggy\_callers.py", line 139, in _multicall
+    |     teardown.throw(exception)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\_pytest\logging.py", line 850, in pytest_runtest_call
+    |     yield from self._runtest_for(item, "call")
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\_pytest\logging.py", line 833, in _runtest_for
+    |     yield
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\pluggy\_callers.py", line 139, in _multicall
+    |     teardown.throw(exception)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\_pytest\capture.py", line 878, in pytest_runtest_call
+    |     return (yield)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\pluggy\_callers.py", line 139, in _multicall
+    |     teardown.throw(exception)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\_pytest\skipping.py", line 257, in pytest_runtest_call
+    |     return (yield)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    |     res = hook_impl.function(*args)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\_pytest\runner.py", line 183, in pytest_runtest_call
+    |     raise e
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\_pytest\runner.py", line 173, in pytest_runtest_call
+    |     item.runtest()
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\_pytest\python.py", line 1627, in runtest
+    |     self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\pluggy\_callers.py", line 167, in _multicall
+    |     raise exception
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\pluggy\_callers.py", line 139, in _multicall
+    |     teardown.throw(exception)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\pluggy\_callers.py", line 53, in run_old_style_hookwrapper
+    |     return result.get_result()
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\pluggy\_result.py", line 103, in get_result
+    |     raise exc.with_traceback(tb)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\pluggy\_callers.py", line 38, in run_old_style_hookwrapper
+    |     res = yield
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    |     res = hook_impl.function(*args)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\anyio\pytest_plugin.py", line 190, in pytest_pyfunc_call
+    |     runner.run_test(pyfuncitem.obj, testargs)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\anyio\_backends\_asyncio.py", line 2306, in run_test
+    |     self._raise_async_exceptions()
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\anyio\_backends\_asyncio.py", line 2210, in _raise_async_exceptions
+    |     raise exceptions[0]
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\anyio\_backends\_asyncio.py", line 2300, in run_test
+    |     self.get_loop().run_until_complete(
+    |   File "C:\Users\visha\AppData\Local\Programs\Python\Python310\lib\asyncio\base_events.py", line 646, in run_until_complete
+    |     return future.result()
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\anyio\_backends\_asyncio.py", line 2260, in _call_in_runner_task
+    |     return await future
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\anyio\_backends\_asyncio.py", line 2227, in _run_tests_and_fixtures
+    |     retval = await coro
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\backend\tests\test_api.py", line 29, in test_register_and_login
+    |     r = await client.post("/api/v1/auth/register", json={
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\httpx\_client.py", line 1892, in post
+    |     return await self.request(
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\httpx\_client.py", line 1574, in request
+    |     return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\httpx\_client.py", line 1661, in send
+    |     response = await self._send_handling_auth(
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\httpx\_client.py", line 1689, in _send_handling_auth
+    |     response = await self._send_handling_redirects(
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\httpx\_client.py", line 1726, in _send_handling_redirects
+    |     response = await self._send_single_request(request)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\httpx\_client.py", line 1763, in _send_single_request
+    |     response = await transport.handle_async_request(request)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\httpx\_transports\asgi.py", line 164, in handle_async_request
+    |     await self.app(scope, receive, send)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\fastapi\applications.py", line 1054, in __call__
+    |     await super().__call__(scope, receive, send)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\applications.py", line 123, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    |     raise exc
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    |     await self.app(scope, receive, _send)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\middleware\cors.py", line 85, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\middleware\gzip.py", line 24, in __call__
+    |     await responder(scope, receive, send)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\middleware\gzip.py", line 44, in __call__
+    |     await self.app(scope, receive, self.send_with_gzip)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\middleware\base.py", line 189, in __call__
+    |     with collapse_excgroups():
+    |   File "C:\Users\visha\AppData\Local\Programs\Python\Python310\lib\contextlib.py", line 153, in __exit__
+    |     self.gen.throw(typ, value, traceback)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\_utils.py", line 93, in collapse_excgroups
+    |     raise exc
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\middleware\base.py", line 191, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |   File "c:\Users\visha\OneDrive\Desktop\routeiq\routeiq\backend\app\middleware\metrics.py", line 23, in dispatch
+    |     response = await call_next(request)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\middleware\base.py", line 165, in call_next
+    |     raise app_exc
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\middleware\base.py", line 151, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\middleware\base.py", line 189, in __call__
+    |     with collapse_excgroups():
+    |   File "C:\Users\visha\AppData\Local\Programs\Python\Python310\lib\contextlib.py", line 153, in __exit__
+    |     self.gen.throw(typ, value, traceback)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\_utils.py", line 93, in collapse_excgroups
+    |     raise exc
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\middleware\base.py", line 191, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |   File "c:\Users\visha\OneDrive\Desktop\routeiq\routeiq\backend\app\middleware\request_id.py", line 10, in dispatch
+    |     response = await call_next(request)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\middleware\base.py", line 165, in call_next
+    |     raise app_exc
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\middleware\base.py", line 151, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\middleware\exceptions.py", line 65, in __call__
+    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\_exception_handler.py", line 64, in wrapped_app
+    |     raise exc
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\routing.py", line 756, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\routing.py", line 776, in app
+    |     await route.handle(scope, receive, send)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\routing.py", line 297, in handle
+    |     await self.app(scope, receive, send)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\routing.py", line 77, in app
+    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\_exception_handler.py", line 64, in wrapped_app
+    |     raise exc
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\starlette\routing.py", line 72, in app
+    |     response = await func(request)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\fastapi\routing.py", line 278, in app
+    |     raw_response = await run_endpoint_function(
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\fastapi\routing.py", line 191, in run_endpoint_function
+    |     return await dependant.call(**values)
+    |   File "c:\Users\visha\OneDrive\Desktop\routeiq\routeiq\backend\app\api\v1\endpoints\auth.py", line 21, in register
+    |     result = await db.execute(select(User).where(User.email == payload.email))
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 461, in execute
+    |     result = await greenlet_spawn(
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 201, in greenlet_spawn
+    |     result = context.throw(*sys.exc_info())
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\orm\session.py", line 2351, in execute
+    |     return self._execute_internal(
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\orm\session.py", line 2226, in _execute_internal
+    |     conn = self._connection_for_bind(bind)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\orm\session.py", line 2095, in _connection_for_bind
+    |     return trans._connection_for_bind(engine, execution_options)
+    |   File "<string>", line 2, in _connection_for_bind
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\orm\state_changes.py", line 139, in _go
+    |     ret_value = fn(self, *arg, **kw)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\orm\session.py", line 1189, in _connection_for_bind
+    |     conn = bind.connect()
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\engine\base.py", line 3276, in connect
+    |     return self._connection_cls(self)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\engine\base.py", line 146, in __init__
+    |     self._dbapi_connection = engine.raw_connection()
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\engine\base.py", line 3300, in raw_connection
+    |     return self.pool.connect()
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\pool\base.py", line 449, in connect
+    |     return _ConnectionFairy._checkout(self)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\pool\base.py", line 1263, in _checkout
+    |     fairy = _ConnectionRecord.checkout(pool)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\pool\base.py", line 712, in checkout
+    |     rec = pool._do_get()
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\pool\impl.py", line 179, in _do_get
+    |     with util.safe_reraise():
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\util\langhelpers.py", line 146, in __exit__
+    |     raise exc_value.with_traceback(exc_tb)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\pool\impl.py", line 177, in _do_get
+    |     return self._create_connection()
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\pool\base.py", line 390, in _create_connection
+    |     return _ConnectionRecord(self)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\pool\base.py", line 674, in __init__
+    |     self.__connect()
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\pool\base.py", line 900, in __connect
+    |     with util.safe_reraise():
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\util\langhelpers.py", line 146, in __exit__
+    |     raise exc_value.with_traceback(exc_tb)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\pool\base.py", line 896, in __connect
+    |     self.dbapi_connection = connection = pool._invoke_creator(self)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\engine\create.py", line 643, in connect
+    |     return dialect.connect(*cargs, **cparams)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\engine\default.py", line 620, in connect
+    |     return self.loaded_dbapi.connect(*cargs, **cparams)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 937, in connect
+    |     await_only(creator_fn(*arg, **kw)),
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 131, in await_only
+    |     return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    |     value = await result
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\asyncpg\connection.py", line 2329, in connect
+    |     return await connect_utils._connect(
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\asyncpg\connect_utils.py", line 1017, in _connect
+    |     raise last_error or exceptions.TargetServerAttributeNotMatched(
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\asyncpg\connect_utils.py", line 991, in _connect
+    |     conn = await _connect_addr(
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\asyncpg\connect_utils.py", line 828, in _connect_addr
+    |     return await __connect_addr(params, True, *args)
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\asyncpg\connect_utils.py", line 873, in __connect_addr
+    |     tr, pr = await connector
+    |   File "C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\asyncpg\connect_utils.py", line 744, in _create_ssl_connection
+    |     tr, pr = await loop.create_connection(
+    |   File "C:\Users\visha\AppData\Local\Programs\Python\Python310\lib\asyncio\base_events.py", line 1025, in create_connection
+    |     infos = await self._ensure_resolved(
+    |   File "C:\Users\visha\AppData\Local\Programs\Python\Python310\lib\asyncio\base_events.py", line 1404, in _ensure_resolved
+    |     return await loop.getaddrinfo(host, port, family=family, type=type,
+    |   File "C:\Users\visha\AppData\Local\Programs\Python\Python310\lib\asyncio\base_events.py", line 860, in getaddrinfo
+    |     return await self.run_in_executor(
+    |   File "C:\Users\visha\AppData\Local\Programs\Python\Python310\lib\concurrent\futures\thread.py", line 58, in run
+    |     result = self.fn(*self.args, **self.kwargs)
+    |   File "C:\Users\visha\AppData\Local\Programs\Python\Python310\lib\socket.py", line 955, in getaddrinfo
+    |     for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+    | socket.gaierror: [Errno 11001] getaddrinfo failed
+    +------------------------------------
+
+During handling of the above exception, another exception occurred:
+
+client = <httpx.AsyncClient object at 0x0000018BF08E24D0>
+
+    @pytest.mark.anyio
+    async def test_register_and_login(client):
+        # Register
+>       r = await client.post("/api/v1/auth/register", json={
+            "email": "test@routeiq.io",
+            "full_name": "Test User",
+            "password": "Secure1234!",
+            "role": "manager",
+        })
+
+backend\tests\test_api.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+venv\lib\site-packages\httpx\_client.py:1892: in post
+    return await self.request(
+venv\lib\site-packages\httpx\_client.py:1574: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+venv\lib\site-packages\httpx\_client.py:1661: in send
+    response = await self._send_handling_auth(
+venv\lib\site-packages\httpx\_client.py:1689: in _send_handling_auth
+    response = await self._send_handling_redirects(
+venv\lib\site-packages\httpx\_client.py:1726: in _send_handling_redirects
+    response = await self._send_single_request(request)
+venv\lib\site-packages\httpx\_client.py:1763: in _send_single_request
+    response = await transport.handle_async_request(request)
+venv\lib\site-packages\httpx\_transports\asgi.py:164: in handle_async_request
+    await self.app(scope, receive, send)
+venv\lib\site-packages\fastapi\applications.py:1054: in __call__
+    await super().__call__(scope, receive, send)
+venv\lib\site-packages\starlette\applications.py:123: in __call__
+    await self.middleware_stack(scope, receive, send)
+venv\lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+venv\lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+venv\lib\site-packages\starlette\middleware\cors.py:85: in __call__
+    await self.app(scope, receive, send)
+venv\lib\site-packages\starlette\middleware\gzip.py:24: in __call__
+    await responder(scope, receive, send)
+venv\lib\site-packages\starlette\middleware\gzip.py:44: in __call__
+    await self.app(scope, receive, self.send_with_gzip)
+venv\lib\site-packages\starlette\middleware\base.py:189: in __call__
+    with collapse_excgroups():
+..\..\..\..\AppData\Local\Programs\Python\Python310\lib\contextlib.py:153: in __exit__
+    self.gen.throw(typ, value, traceback)
+venv\lib\site-packages\starlette\_utils.py:93: in collapse_excgroups
+    raise exc
+venv\lib\site-packages\starlette\middleware\base.py:191: in __call__
+    response = await self.dispatch_func(request, call_next)
+backend\app\middleware\metrics.py:23: in dispatch
+    response = await call_next(request)
+venv\lib\site-packages\starlette\middleware\base.py:165: in call_next
+    raise app_exc
+venv\lib\site-packages\starlette\middleware\base.py:151: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+venv\lib\site-packages\starlette\middleware\base.py:189: in __call__
+    with collapse_excgroups():
+..\..\..\..\AppData\Local\Programs\Python\Python310\lib\contextlib.py:153: in __exit__
+    self.gen.throw(typ, value, traceback)
+venv\lib\site-packages\starlette\_utils.py:93: in collapse_excgroups
+    raise exc
+venv\lib\site-packages\starlette\middleware\base.py:191: in __call__
+    response = await self.dispatch_func(request, call_next)
+backend\app\middleware\request_id.py:10: in dispatch
+    response = await call_next(request)
+venv\lib\site-packages\starlette\middleware\base.py:165: in call_next
+    raise app_exc
+venv\lib\site-packages\starlette\middleware\base.py:151: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+venv\lib\site-packages\starlette\middleware\exceptions.py:65: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+venv\lib\site-packages\starlette\_exception_handler.py:64: in wrapped_app
+    raise exc
+venv\lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    await app(scope, receive, sender)
+venv\lib\site-packages\starlette\routing.py:756: in __call__
+    await self.middleware_stack(scope, receive, send)
+venv\lib\site-packages\starlette\routing.py:776: in app
+    await route.handle(scope, receive, send)
+venv\lib\site-packages\starlette\routing.py:297: in handle
+    await self.app(scope, receive, send)
+venv\lib\site-packages\starlette\routing.py:77: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+venv\lib\site-packages\starlette\_exception_handler.py:64: in wrapped_app
+    raise exc
+venv\lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    await app(scope, receive, sender)
+venv\lib\site-packages\starlette\routing.py:72: in app
+    response = await func(request)
+venv\lib\site-packages\fastapi\routing.py:278: in app
+    raw_response = await run_endpoint_function(
+venv\lib\site-packages\fastapi\routing.py:191: in run_endpoint_function
+    return await dependant.call(**values)
+backend\app\api\v1\endpoints\auth.py:21: in register
+    result = await db.execute(select(User).where(User.email == payload.email))
+venv\lib\site-packages\sqlalchemy\ext\asyncio\session.py:461: in execute
+    result = await greenlet_spawn(
+venv\lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+venv\lib\site-packages\sqlalchemy\orm\session.py:2351: in execute
+    return self._execute_internal(
+venv\lib\site-packages\sqlalchemy\orm\session.py:2226: in _execute_internal
+    conn = self._connection_for_bind(bind)
+venv\lib\site-packages\sqlalchemy\orm\session.py:2095: in _connection_for_bind
+    return trans._connection_for_bind(engine, execution_options)
+<string>:2: in _connection_for_bind
+    ???
+venv\lib\site-packages\sqlalchemy\orm\state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+venv\lib\site-packages\sqlalchemy\orm\session.py:1189: in _connection_for_bind
+    conn = bind.connect()
+venv\lib\site-packages\sqlalchemy\engine\base.py:3276: in connect
+    return self._connection_cls(self)
+venv\lib\site-packages\sqlalchemy\engine\base.py:146: in __init__
+    self._dbapi_connection = engine.raw_connection()
+venv\lib\site-packages\sqlalchemy\engine\base.py:3300: in raw_connection
+    return self.pool.connect()
+venv\lib\site-packages\sqlalchemy\pool\base.py:449: in connect
+    return _ConnectionFairy._checkout(self)
+venv\lib\site-packages\sqlalchemy\pool\base.py:1263: in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+venv\lib\site-packages\sqlalchemy\pool\base.py:712: in checkout
+    rec = pool._do_get()
+venv\lib\site-packages\sqlalchemy\pool\impl.py:179: in _do_get
+    with util.safe_reraise():
+venv\lib\site-packages\sqlalchemy\util\langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+venv\lib\site-packages\sqlalchemy\pool\impl.py:177: in _do_get
+    return self._create_connection()
+venv\lib\site-packages\sqlalchemy\pool\base.py:390: in _create_connection
+    return _ConnectionRecord(self)
+venv\lib\site-packages\sqlalchemy\pool\base.py:674: in __init__
+    self.__connect()
+venv\lib\site-packages\sqlalchemy\pool\base.py:900: in __connect
+    with util.safe_reraise():
+venv\lib\site-packages\sqlalchemy\util\langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+venv\lib\site-packages\sqlalchemy\pool\base.py:896: in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+venv\lib\site-packages\sqlalchemy\engine\create.py:643: in connect
+    return dialect.connect(*cargs, **cparams)
+venv\lib\site-packages\sqlalchemy\engine\default.py:620: in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+venv\lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:937: in connect
+    await_only(creator_fn(*arg, **kw)),
+venv\lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:131: in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+venv\lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+venv\lib\site-packages\asyncpg\connection.py:2329: in connect
+    return await connect_utils._connect(
+venv\lib\site-packages\asyncpg\connect_utils.py:1017: in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+venv\lib\site-packages\asyncpg\connect_utils.py:991: in _connect
+    conn = await _connect_addr(
+venv\lib\site-packages\asyncpg\connect_utils.py:828: in _connect_addr
+    return await __connect_addr(params, True, *args)
+venv\lib\site-packages\asyncpg\connect_utils.py:873: in __connect_addr
+    tr, pr = await connector
+venv\lib\site-packages\asyncpg\connect_utils.py:744: in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+..\..\..\..\AppData\Local\Programs\Python\Python310\lib\asyncio\base_events.py:1025: in create_connection
+    infos = await self._ensure_resolved(
+..\..\..\..\AppData\Local\Programs\Python\Python310\lib\asyncio\base_events.py:1404: in _ensure_resolved
+    return await loop.getaddrinfo(host, port, family=family, type=type,
+..\..\..\..\AppData\Local\Programs\Python\Python310\lib\asyncio\base_events.py:860: in getaddrinfo
+    return await self.run_in_executor(
+..\..\..\..\AppData\Local\Programs\Python\Python310\lib\concurrent\futures\thread.py:58: in run
+    result = self.fn(*self.args, **self.kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+host = 'db', port = 5433, family = 0, type = <SocketKind.SOCK_STREAM: 1>
+proto = 0, flags = 0
+
+    def getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+        """Resolve host and port into list of address info entries.
+    
+        Translate the host/port argument into a sequence of 5-tuples that contain
+        all the necessary arguments for creating a socket connected to that service.
+        host is a domain name, a string representation of an IPv4/v6 address or
+        None. port is a string service name such as 'http', a numeric port number or
+        None. By passing None as the value of host and port, you can pass NULL to
+        the underlying C API.
+    
+        The family, type and proto arguments can be optionally specified in order to
+        narrow the list of addresses returned. Passing zero as a value for each of
+        these arguments selects the full range of results.
+        """
+        # We override this function since we want to translate the numeric family
+        # and socket type values to enum constants.
+        addrlist = []
+>       for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+E       socket.gaierror: [Errno 11001] getaddrinfo failed
+
+..\..\..\..\AppData\Local\Programs\Python\Python310\lib\socket.py:955: gaierror
+============================== warnings summary ===============================
+venv\lib\site-packages\pydantic\_internal\_fields.py:160
+  C:\Users\visha\OneDrive\Desktop\routeiq\routeiq\venv\lib\site-packages\pydantic\_internal\_fields.py:160: UserWarning: Field "model_version" has conflict with protected namespace "model_".
+  
+  You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED backend/tests/test_api.py::test_register_and_login - socket.gaierror: ...
+=================== 1 failed, 3 passed, 1 warning in 16.61s ===================
