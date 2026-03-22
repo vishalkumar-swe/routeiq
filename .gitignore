@@ -35,3 +35,18 @@ Thumbs.db
 *.pem
 *.key
 secrets/
+
+# Logs & debug output
+*.log
+all_logs.txt
+db_logs.txt
+build.log
+test_results*.txt
+
+# Dev/debug scripts (not needed in repo)
+backend/check_pass.py
+backend/check_users.py
+backend/diag.py
+backend/fix_passwords.py
+backend/reset_passwords.py
+backend/verify_login_api.py
