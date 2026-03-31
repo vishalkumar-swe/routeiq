@@ -251,6 +251,15 @@ class DynamicRerouteEngine:
             .limit(1)
         )
         tele = tele_result.scalar_one_or_none()
+
+        # Use a descriptive trigger message
+        trigger_msg = "Manual incubation scan"
+        if tele:
+            # If we have real telemetry, we can check if they're moving
+            if tele.speed_kmph < 5:
+                trigger_msg = "Detected stationary vehicle on active route"
+            else:
+                trigger_msg = "Heuristic route efficiency scan"
         
         start_loc = Location(
             id=str(target_uid),
@@ -279,7 +288,7 @@ class DynamicRerouteEngine:
             started_at=datetime.now(timezone.utc)
         )
 
-        return await self._reroute_vehicle(
+        decision = await self._reroute_vehicle(
             vehicle_id=str(target_uid),
             route_id=str(route.id),
             remaining_stops=locations,
@@ -287,6 +296,11 @@ class DynamicRerouteEngine:
             event=mock_event,
             start_location=start_loc
         )
+        
+        if decision:
+            decision.trigger = trigger_msg
+            
+        return decision
 
 
 # Singleton

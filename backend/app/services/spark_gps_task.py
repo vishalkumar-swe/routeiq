@@ -19,6 +19,9 @@ class SparkGPSTask:
                 async with AsyncSessionLocal() as db:
                     await SparkGPSService.fetch_and_sync(db)
                     await db.commit()
+                    # Sync pulse for UI
+                    from app.core.redis import cache_set
+                    await cache_set("system:sparkgps:sync_pulse", "active", ttl=45)
             except Exception as e:
                 logger.error(f"Error in SparkGPS sync task: {str(e)}")
             

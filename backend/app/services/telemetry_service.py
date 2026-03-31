@@ -6,8 +6,10 @@ from typing import Dict, Any, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.models import Telemetry, Vehicle
-from app.core.redis import cache_set
+from app.core.redis import cache_set, cache_get
 from app.core.websocket import manager
+from app.ml.reroute_engine import reroute_engine
+from app.core.database import AsyncSessionLocal
 
 logger = logging.getLogger("routeiq.telemetry")
 
@@ -79,4 +81,30 @@ class TelemetryService:
                 "payload": {"vehicle_id": str(vehicle.id), "plate_number": vehicle.plate_number}
             })
 
+        # 7. AI INCUBATOR: Trigger re-optimization check for active routes
+        if vehicle.status == "on_route":
+            # Avoid re-optimization on every single ping (e.g. only every 2 mins max)
+            lock_key = f"reroute_check_lock:{vehicle_id}"
+            if not await cache_get(lock_key):
+                await cache_set(lock_key, "locked", ttl=120)
+                # Run re-optimization in background to not block ingestion
+                import asyncio
+                asyncio.create_task(self._trigger_reroute_check(str(vehicle_id)))
+
         return t
+
+    @staticmethod
+    async def _trigger_reroute_check(vehicle_id: str):
+        """Background task to run a reroute scan."""
+        try:
+            async with AsyncSessionLocal() as db:
+                from app.api.v1.endpoints.optimization import incubate_routing
+                # We reuse the incubation logic which saves results to Redis
+                # Note: This is a hacky way to call an endpoint-like function, 
+                # but it ensures consistent behavior.
+                from app.schemas.schemas import TokenData
+                mock_token = TokenData(user_id="system", role="admin")
+                await incubate_routing(vehicle_id, db, mock_token)
+                await db.commit()
+        except Exception as e:
+            logger.error(f"Background reroute check failed for {vehicle_id}: {str(e)}")

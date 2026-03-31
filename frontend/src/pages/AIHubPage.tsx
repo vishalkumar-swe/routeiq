@@ -310,6 +310,13 @@ export default function AIHubPage() {
 
       {/* Custom Styles for Animation */}
       <style>{`
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+          animation: spin-slow 3s linear infinite;
+        }
         @keyframes infiniteScroll {
           from { transform: translateX(0); }
           to { transform: translateX(-50%); }
@@ -323,20 +330,38 @@ export default function AIHubPage() {
 }
 
 function ActiveMissionCard({ mission, onIncubate, isPending }: { mission: any, onIncubate: () => void, isPending: boolean }) {
+  const isOptimizable = mission.has_suggestion || mission.status === 'optimization_available';
+  
   return (
-    <div className="p-6 rounded-[2rem] bg-white border border-slate-200 shadow-sm hover:shadow-md transition-all group">
+    <div className={clsx(
+      "p-6 rounded-[2rem] bg-white border border-slate-200 shadow-sm transition-all group",
+      isOptimizable ? "ring-2 ring-yellow-400 ring-offset-4 ring-offset-slate-50 border-yellow-200" : "hover:shadow-md"
+    )}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-yellow-500 shadow-[0_4px_15px_rgba(0,0,0,0.1)]">
-            <Zap size={18} className={clsx(mission.sync_pulse === 'active' && "animate-pulse")} />
+          <div className={clsx(
+            "w-10 h-10 rounded-xl flex items-center justify-center shadow-[0_4px_15px_rgba(0,0,0,0.1)] transition-colors",
+            isOptimizable ? "bg-yellow-400 text-slate-900" : "bg-slate-900 text-yellow-500"
+          )}>
+            <Zap size={18} className={clsx((mission.sync_pulse === 'active' || isOptimizable) && "animate-pulse")} />
           </div>
           <div>
             <div className="text-sm font-black text-slate-900 uppercase tracking-tight">{mission.plate_number}</div>
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{mission.status || 'ACTIVE'}</div>
+            <div className={clsx(
+              "text-[10px] font-bold uppercase tracking-widest",
+              isOptimizable ? "text-yellow-600" : "text-slate-400"
+            )}>
+              {isOptimizable ? "Optimization Available" : (mission.status === 'on_route' ? 'LIVE // IN TRANSIT' : 'PENDING')}
+            </div>
           </div>
         </div>
         <div className="text-right">
-          <div className="text-lg font-black text-slate-900 leading-none">{mission.ai_efficiency_score.toFixed(1)}%</div>
+          <div className={clsx(
+            "text-lg font-black leading-none",
+            isOptimizable ? "text-yellow-500" : "text-slate-900"
+          )}>
+            {mission.ai_efficiency_score.toFixed(1)}%
+          </div>
           <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">AI Efficiency</div>
         </div>
       </div>
@@ -348,7 +373,7 @@ function ActiveMissionCard({ mission, onIncubate, isPending }: { mission: any, o
         </div>
         <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-yellow-500 transition-all duration-1000" 
+            className={clsx("h-full transition-all duration-1000", isOptimizable ? "bg-yellow-400" : "bg-slate-900")} 
             style={{ width: `${mission.progress_pct}%` }} 
           />
         </div>
@@ -356,21 +381,38 @@ function ActiveMissionCard({ mission, onIncubate, isPending }: { mission: any, o
         <div className="grid grid-cols-2 gap-2 pt-2">
           <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Speed</div>
-            <div className="text-sm font-black text-slate-900">{mission.speed} km/h</div>
+            <div className="text-sm font-black text-slate-900">{mission.speed} <span className="text-[10px] text-slate-400">km/h</span></div>
           </div>
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Stops Left</div>
-            <div className="text-sm font-black text-slate-900">{mission.remaining_stops}</div>
+          <div className={clsx(
+            "p-3 rounded-xl border",
+            isOptimizable ? "bg-yellow-500/10 border-yellow-200" : "bg-slate-50 border-slate-100"
+          )}>
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+              {isOptimizable ? "Savings" : "Stops Left"}
+            </div>
+            <div className={clsx(
+              "text-sm font-black",
+              isOptimizable ? "text-yellow-600" : "text-slate-900"
+            )}>
+              {isOptimizable ? `~${mission.potential_savings} min` : mission.remaining_stops}
+            </div>
           </div>
         </div>
 
         <button 
           onClick={onIncubate}
           disabled={isPending}
-          className="w-full h-12 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 disabled:opacity-50 transition-all flex items-center justify-center gap-2 group-hover:bg-yellow-500 group-hover:text-black transition-colors"
+          className={clsx(
+            "w-full h-12 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2",
+            isOptimizable 
+              ? "bg-yellow-400 text-slate-900 hover:bg-yellow-500 shadow-lg shadow-yellow-400/20" 
+              : "bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50"
+          )}
         >
-          {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck size={14} className="group-hover:text-black text-yellow-500" />}
-          Incubate Routing
+          {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+            isOptimizable ? <RotateCw size={14} className="animate-spin-slow" /> : <ShieldCheck size={14} className="text-yellow-500" />
+          )}
+          {isOptimizable ? "Apply Neural Reroute" : "Incubate Planning"}
         </button>
       </div>
     </div>

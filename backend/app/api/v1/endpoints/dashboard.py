@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.models.models import Route, RouteStop, Vehicle
+from app.models.models import Route, Vehicle
 from app.schemas.schemas import KPIResponse, TokenData
 
 router = APIRouter()
@@ -38,7 +38,6 @@ async def get_kpis(
 
     # Total vehicles
     total_v = await db.execute(total_v_q)
-    total_vehicles = total_v.scalar() or 1
 
     # Routes today
     routes_result = await db.execute(routes_q)

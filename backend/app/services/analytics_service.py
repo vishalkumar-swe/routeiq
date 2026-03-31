@@ -150,17 +150,30 @@ class AnalyticsService:
             pending = [s for s in route.stops if s.status == "pending"]
             completed = [s for s in route.stops if s.status == "completed"]
             
+            # Check for active reroute suggestions to update status and efficiency
+            suggestions = await cache_get("active_reroute_suggestions") or []
+            vehicle_suggestion = next((s for s in suggestions if s['vehicle_id'] == str(route.vehicle_id)), None)
+            
+            ai_score = 98.4 - (len(pending) * 0.2)
+            status = "on_route" if route.status == "active" else "pending"
+            if vehicle_suggestion:
+                status = "optimization_available"
+                # Boost efficiency score if we found a better route
+                ai_score = 75.0 + (vehicle_suggestion['saved_minutes'] / 2) # Lower current score implies room for optimization
+            
             missions.append({
                 "vehicle_id": str(route.vehicle_id),
                 "route_id": str(route.id),
                 "plate_number": route.vehicle.plate_number,
-                "status": "incubating",
+                "status": status,
                 "progress_pct": (len(completed) / len(route.stops)) * 100 if route.stops else 0,
                 "speed": tele.speed_kmph if tele else 0,
                 "last_location": [tele.latitude, tele.longitude] if tele else None,
                 "remaining_stops": len(pending),
-                "ai_efficiency_score": 98.4 - (len(pending) * 0.2), # Heuristic for demo
-                "sync_pulse": "active"
+                "ai_efficiency_score": min(99.9, ai_score),
+                "sync_pulse": "active",
+                "has_suggestion": vehicle_suggestion is not None,
+                "potential_savings": vehicle_suggestion['saved_minutes'] if vehicle_suggestion else 0
             })
             
         return missions
