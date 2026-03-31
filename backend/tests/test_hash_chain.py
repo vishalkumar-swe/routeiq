@@ -1,4 +1,5 @@
 import uuid
+import json
 from datetime import datetime
 from app.services.security_service import SecurityService
 
@@ -7,13 +8,15 @@ def test_hash_chain_integrity():
     Test that the hash chain is correctly generated and validated.
     """
     # 1. Create a dummy log entry
+    fixed_ts = "2024-03-31T12:00:00"
     log1_data = {
         "shipment_id": str(uuid.uuid4()),
         "status": "created",
         "location_lat": 12.9716,
         "location_lng": 77.5946,
-        "timestamp": datetime.now().isoformat(),
-        "index": 0
+        "timestamp": fixed_ts,
+        "index": 0,
+        "metadata": None
     }
     prev_hash_0 = "0" * 64
     log1_hash = SecurityService.generate_hash(log1_data, prev_hash_0)
@@ -29,6 +32,7 @@ def test_hash_chain_integrity():
             self.index = data["index"]
             self.log_hash = log_hash
             self.previous_hash = prev_hash
+            self.metadata_json = data.get("metadata")
 
     l1 = MockLog(log1_data, log1_hash, prev_hash_0)
     
@@ -38,8 +42,9 @@ def test_hash_chain_integrity():
         "status": "in_transit",
         "location_lat": 12.9800,
         "location_lng": 77.6000,
-        "timestamp": datetime.now().isoformat(),
-        "index": 1
+        "timestamp": fixed_ts,
+        "index": 1,
+        "metadata": None
     }
     log2_hash = SecurityService.generate_hash(log2_data, log1_hash)
     l2 = MockLog(log2_data, log2_hash, log1_hash)
