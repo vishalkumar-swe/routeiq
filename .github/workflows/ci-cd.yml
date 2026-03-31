@@ -59,6 +59,7 @@ jobs:
           DATABASE_URL: postgresql+asyncpg://routeiq:routeiq_pass@localhost:5432/routeiq_test
           REDIS_URL: redis://localhost:6379/0
           SECRET_KEY: test-secret-key-for-ci
+          PYTHONPATH: .
         run: pytest tests/ -v --tb=short
 
   # ─────────────────────────────────────────────
