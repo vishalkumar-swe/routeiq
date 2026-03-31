@@ -2,10 +2,10 @@ import uuid
 from datetime import datetime
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from sqlalchemy.orm import selectinload, joinedload
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from app.models.models import Shipment, Parcel, DeliveryPoint, ShipmentLog
-from app.schemas.schemas import ShipmentCreate, ShipmentUpdate
+from app.schemas.schemas import ShipmentCreate
 from app.services.security_service import SecurityService
 
 class ShipmentService:

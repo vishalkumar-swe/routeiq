@@ -1,8 +1,6 @@
 import asyncio
 import random
-import uuid
 import httpx
-from datetime import datetime
 
 # Configuration
 API_URL = "http://localhost:8000/api/v1"

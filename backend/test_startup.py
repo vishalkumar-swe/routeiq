@@ -5,7 +5,6 @@ sys.path.append(os.getcwd())
 
 async def test():
     try:
-        from app.main import app
         from app.core.database import engine, Base
         from app.core.redis import redis_client
         
@@ -23,7 +22,7 @@ async def test():
         print("Redis ok.")
         
         print("Manual lifespan test success!")
-    except Exception as e:
+    except Exception:
         import traceback
         traceback.print_exc()
 

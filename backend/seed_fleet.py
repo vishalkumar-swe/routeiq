@@ -2,7 +2,7 @@ import asyncio
 import uuid
 from sqlalchemy import select
 from app.core.database import AsyncSessionLocal
-from app.models.models import Depot, DeliveryPoint, Vehicle, User
+from app.models.models import Depot, DeliveryPoint, Vehicle
 
 async def seed_fleet():
     async with AsyncSessionLocal() as db:

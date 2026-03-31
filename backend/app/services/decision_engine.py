@@ -1,8 +1,7 @@
 import uuid
-from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from app.models.models import Vehicle, Shipment, Route
+from app.models.models import Vehicle, Shipment
 from app.ml.bin_packer import bin_packer, Item, Bin
 
 class AIDecisionEngine:

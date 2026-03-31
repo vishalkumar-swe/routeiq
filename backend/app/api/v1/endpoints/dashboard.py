@@ -26,18 +26,13 @@ async def get_kpis(
         # For routes, we need to join with Vehicle
         routes_q = select(Route).join(Vehicle).where(Vehicle.driver_id == driver_uuid).where(Route.created_at >= today)
         v_count_q = select(func.count()).where(Vehicle.driver_id == driver_uuid).where(Vehicle.status == "on_route")
-        total_v_q = select(func.count(Vehicle.id)).where(Vehicle.driver_id == driver_uuid)
     else:
         routes_q = select(Route).where(Route.created_at >= today)
         v_count_q = select(func.count()).where(Vehicle.status == "on_route")
-        total_v_q = select(func.count(Vehicle.id))
 
     # Active vehicles
     v_result = await db.execute(v_count_q)
     active_vehicles = v_result.scalar() or 0
-
-    # Total vehicles
-    total_v = await db.execute(total_v_q)
 
     # Routes today
     routes_result = await db.execute(routes_q)

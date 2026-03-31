@@ -6,11 +6,10 @@ Supports time windows, vehicle capacity, and traffic-aware distances.
 from __future__ import annotations
 
 import time
-import uuid
 import math
 import logging
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import numpy as np
 

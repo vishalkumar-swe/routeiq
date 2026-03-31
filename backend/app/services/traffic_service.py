@@ -1,6 +1,3 @@
-import os
-import httpx
-from typing import Dict
 
 class TrafficService:
     """
@@ -16,8 +13,10 @@ class TrafficService:
         """
         # Pseudo-random consistency
         score = (abs(lat) + abs(lng)) % 10
-        if score > 8: return "high"
-        if score > 5: return "medium"
+        if score > 8:
+            return "high"
+        if score > 5:
+            return "medium"
         return "low"
 
     @staticmethod

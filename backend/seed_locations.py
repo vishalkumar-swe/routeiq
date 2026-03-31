@@ -1,5 +1,4 @@
 import asyncio
-import uuid
 from sqlalchemy import select, text
 from app.core.database import AsyncSessionLocal, engine, Base
 from app.models.models import DeliveryPoint, Depot

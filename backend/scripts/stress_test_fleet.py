@@ -1,6 +1,5 @@
 import asyncio
 import random
-import uuid
 import time
 import httpx
 import logging

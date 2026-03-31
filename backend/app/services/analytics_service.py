@@ -5,8 +5,7 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.models import Route, RouteStop, Telemetry, Shipment, Vehicle, DeliveryPoint
-from app.services.shipment_service import ShipmentService
+from app.models.models import Route, RouteStop, Telemetry, Shipment, Vehicle
 from app.ml.reroute_engine import reroute_engine, TrafficEvent, RerouteDecision
 from app.core.redis import cache_set, cache_get
 

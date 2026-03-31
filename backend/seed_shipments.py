@@ -2,7 +2,7 @@ import asyncio
 import uuid
 import random
 from sqlalchemy import select
-from app.core.database import AsyncSessionLocal, engine
+from app.core.database import AsyncSessionLocal
 from app.models.models import DeliveryPoint, Shipment, Parcel, ShipmentLog
 from app.services.security_service import SecurityService
 

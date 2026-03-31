@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import AsyncSessionLocal
 from app.services.spark_gps_service import SparkGPSService
 

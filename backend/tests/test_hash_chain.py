@@ -1,4 +1,3 @@
-import pytest
 import uuid
 from datetime import datetime
 from app.services.security_service import SecurityService

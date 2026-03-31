@@ -13,7 +13,6 @@ from prometheus_client import make_asgi_app
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.models import models  # Ensure all models are registered
 
 from app.core.redis import redis_client
 from app.core.logging import setup_logging

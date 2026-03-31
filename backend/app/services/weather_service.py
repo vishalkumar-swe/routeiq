@@ -1,6 +1,3 @@
-import os
-import httpx
-from typing import Dict
 
 class WeatherService:
     """
@@ -16,8 +13,10 @@ class WeatherService:
         """
         # Pseudo-random consistency
         score = (abs(lat) + abs(lng)) % 10
-        if score > 8: return "storm"
-        if score > 6: return "rain"
+        if score > 8:
+            return "storm"
+        if score > 6:
+            return "rain"
         return "clear"
 
     @staticmethod

@@ -4,7 +4,6 @@ Monitors active routes and triggers re-routing when delay thresholds are exceede
 """
 from __future__ import annotations
 
-import asyncio
 import logging
 import uuid
 import math

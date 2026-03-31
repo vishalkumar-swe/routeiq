@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
-from sqlalchemy import select, update
+from sqlalchemy import select
 from app.core.database import AsyncSessionLocal
 from app.models.models import Vehicle
 from app.core.websocket import manager

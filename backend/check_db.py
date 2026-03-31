@@ -9,6 +9,7 @@ async def check():
         v_avail = (await s.execute(select(Vehicle).where(Vehicle.status.in_(["available", "idle"])))).scalars().all()
         dp_pending = (await s.execute(select(DeliveryPoint).where(DeliveryPoint.status == "pending"))).scalars().all()
         routes = (await s.execute(select(Route))).scalars().all()
+        print(f"Total Depots: {len(d)}")
         print(f"Available/Idle Vehicles: {len(v_avail)}")
         print(f"Pending DeliveryPoints: {len(dp_pending)}")
         print(f"Total Routes in DB: {len(routes)}")

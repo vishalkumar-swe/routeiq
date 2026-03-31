@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.models.models import Vehicle, Telemetry
+from app.models.models import Vehicle
 from app.services.telemetry_service import TelemetryService
 
 logger = logging.getLogger("routeiq.sparkgps")

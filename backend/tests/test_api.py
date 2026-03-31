@@ -3,6 +3,7 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from app.main import app
+from asgi_lifespan import LifespanManager
 
 
 @pytest.fixture(scope="session")
@@ -10,7 +11,6 @@ def anyio_backend():
     return "asyncio"
 
 
-from asgi_lifespan import LifespanManager
 
 @pytest_asyncio.fixture
 async def client():

@@ -1,7 +1,6 @@
 import asyncio
 from sqlalchemy import text
 from app.core.database import engine, Base
-from app.models.models import Vehicle, Route, VehicleStoppage
 
 async def sync_schema():
     print("--- SYNCING FLEET INTELLIGENCE SCHEMA ---")

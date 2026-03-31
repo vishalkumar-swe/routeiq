@@ -1,5 +1,4 @@
 import uuid
-from typing import List, Dict, Optional
 from datetime import datetime, timedelta
 
 class AlertService:

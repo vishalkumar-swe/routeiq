@@ -1,14 +1,13 @@
 import uuid
 import logging
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.models import Telemetry, Vehicle
 from app.core.redis import cache_set, cache_get
 from app.core.websocket import manager
-from app.ml.reroute_engine import reroute_engine
 from app.core.database import AsyncSessionLocal
 
 logger = logging.getLogger("routeiq.telemetry")
@@ -89,7 +88,7 @@ class TelemetryService:
                 await cache_set(lock_key, "locked", ttl=120)
                 # Run re-optimization in background to not block ingestion
                 import asyncio
-                asyncio.create_task(self._trigger_reroute_check(str(vehicle_id)))
+                asyncio.create_task(TelemetryService._trigger_reroute_check(str(vehicle_id)))
 
         return t
 

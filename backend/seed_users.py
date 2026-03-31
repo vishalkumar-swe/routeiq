@@ -1,8 +1,6 @@
 import asyncio
-import uuid
 import bcrypt
-from datetime import datetime, timezone
-from sqlalchemy import text, select
+from sqlalchemy import select
 from app.core.database import AsyncSessionLocal, engine
 from app.models.models import User
 
