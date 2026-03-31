@@ -3,6 +3,7 @@ RouteIQ - Fleet Intelligence Platform
 FastAPI Application Entry Point
 """
 from contextlib import asynccontextmanager
+import asyncio
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +13,8 @@ from prometheus_client import make_asgi_app
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.database import engine, Base
+from app.models import models  # Ensure all models are registered
+
 from app.core.redis import redis_client
 from app.core.logging import setup_logging
 from app.middleware.metrics import PrometheusMiddleware
@@ -30,19 +33,26 @@ async def lifespan(app: FastAPI):
     # Connect Redis
     await redis_client.ping()
 
+    # Start Fleet Health Monitoring
+    from app.services.fleet_health import fleet_health_monitor
+    from app.services.spark_gps_task import spark_gps_task
+
+    asyncio.create_task(fleet_health_monitor.start())
+    asyncio.create_task(spark_gps_task.start())
+
     yield
 
     # Cleanup
+    await fleet_health_monitor.stop()
+    await spark_gps_task.stop()
     await redis_client.close()
     await engine.dispose()
 
 
 app = FastAPI(
-    title="RouteIQ",
-    version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json"
+    title=settings.APP_NAME,
+    openapi_url="/api/v1/openapi.json",
+    lifespan=lifespan
 )
 
 # Middleware (order matters — outermost first)
@@ -61,7 +71,7 @@ app.add_middleware(
 metrics_app = make_asgi_app()
 app.mount("/metrics", metrics_app)
 
-# Include API router
+# Add Unified API Router
 app.include_router(api_router, prefix="/api/v1")
 
 

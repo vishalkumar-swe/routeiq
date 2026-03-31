@@ -7,16 +7,22 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
+import math
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Tuple
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.redis import cache_get, cache_set
 from app.ml.vrp_solver import Location, VehicleConfig, solve_vrp_ortools
+from app.models.models import Route, RouteStop
 
 logger = logging.getLogger("routeiq.reroute")
 
-REROUTE_DELAY_THRESHOLD_MINUTES = 10   # reroute if delay > 10 min
+REROUTE_DELAY_THRESHOLD_MINUTES = 8   # reroute if delay > 8 min (tightened for better ROI)
 REROUTE_COOLDOWN_SECONDS = 300          # don't reroute same vehicle for 5 min
 
 
@@ -34,6 +40,7 @@ class TrafficEvent:
 @dataclass
 class RerouteDecision:
     vehicle_id: str
+    route_id: str
     trigger: str
     old_eta_minutes: float
     new_eta_minutes: float
@@ -45,47 +52,102 @@ class RerouteDecision:
 class DynamicRerouteEngine:
     """
     Listens for traffic/weather events and decides whether to reroute active vehicles.
-    In production this runs as a Celery periodic task or a background asyncio task.
     """
 
     def __init__(self):
         self._active_events: List[TrafficEvent] = []
 
-    async def process_traffic_event(self, event: TrafficEvent) -> List[RerouteDecision]:
-        """Called when a new traffic event is received (webhook / polling)."""
+    async def process_traffic_event(self, db: AsyncSession, event: TrafficEvent) -> List[RerouteDecision]:
+        """Called when a new traffic event is received."""
         self._active_events.append(event)
         decisions = []
 
-        # In production: query DB for vehicles on routes near event radius
-        # Here we illustrate the decision logic
-        affected_routes = await self._find_affected_routes(event)
+        affected_routes = await self._find_affected_routes(db, event)
 
         for route_id, vehicle_id, remaining_stops, current_eta in affected_routes:
-            if await self._is_on_cooldown(vehicle_id):
+            if await self._is_on_cooldown(str(vehicle_id)):
                 logger.debug(f"Vehicle {vehicle_id} on cooldown, skipping")
                 continue
 
+            # Fetch current position
+            from app.models.models import Telemetry
+            tele_res = await db.execute(
+                select(Telemetry)
+                .where(Telemetry.vehicle_id == vehicle_id)
+                .order_by(Telemetry.timestamp.desc())
+                .limit(1)
+            )
+            tele = tele_res.scalar_one_or_none()
+            start_loc = Location(
+                id=str(vehicle_id),
+                lat=tele.latitude if tele else event.lat,
+                lng=tele.longitude if tele else event.lng
+            )
+
             decision = await self._reroute_vehicle(
-                vehicle_id=vehicle_id,
-                route_id=route_id,
+                vehicle_id=str(vehicle_id),
+                route_id=str(route_id),
                 remaining_stops=remaining_stops,
                 current_eta=current_eta,
                 event=event,
+                start_location=start_loc,
             )
 
             if decision:
                 decisions.append(decision)
-                await self._set_cooldown(vehicle_id)
+                await self._set_cooldown(str(vehicle_id))
 
         return decisions
 
-    async def _find_affected_routes(self, event: TrafficEvent):
+    async def _find_affected_routes(self, db: AsyncSession, event: TrafficEvent) -> List[Tuple[uuid.UUID, uuid.UUID, List[Location], float]]:
         """
         Returns list of (route_id, vehicle_id, remaining_stops, eta_minutes)
         for routes that pass within event.radius_km of the event location.
-        Stub — replace with DB query using PostGIS or Haversine filter.
         """
-        return []  # Populated from DB in production
+        # 1. Fetch active routes with their pending stops
+        result = await db.execute(
+            select(Route)
+            .where(Route.status == "active")
+            .options(selectinload(Route.stops).selectinload(RouteStop.delivery_point))
+        )
+        active_routes = result.scalars().all()
+        
+        affected = []
+        for route in active_routes:
+            # Simple radial filter: are any pending stops within radius_km?
+            pending_stops = [s for s in route.stops if s.status == "pending"]
+            if not pending_stops:
+                continue
+
+            is_affected = False
+            for stop in pending_stops:
+                dp = stop.delivery_point
+                dist = self._haversine_distance(event.lat, event.lng, dp.latitude, dp.longitude)
+                if dist <= event.radius_km:
+                    is_affected = True
+                    break
+            
+            if is_affected:
+                locations = [
+                    Location(
+                        id=str(s.delivery_point_id),
+                        lat=s.delivery_point.latitude,
+                        lng=s.delivery_point.longitude,
+                        demand_kg=s.delivery_point.demand_kg
+                    )
+                    for s in sorted(pending_stops, key=lambda x: x.sequence)
+                ]
+                affected.append((route.id, route.vehicle_id, locations, route.total_duration_minutes))
+                
+        return affected
+
+    def _haversine_distance(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+        R = 6371  # Earth radius in km
+        dlat = math.radians(lat2 - lat1)
+        dlon = math.radians(lon2 - lon1)
+        a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        return R * c
 
     async def _reroute_vehicle(
         self,
@@ -94,17 +156,23 @@ class DynamicRerouteEngine:
         remaining_stops: List[Location],
         current_eta: float,
         event: TrafficEvent,
+        start_location: Location,
     ) -> Optional[RerouteDecision]:
         """Re-solve VRP for remaining stops, avoiding congested area."""
-        if not remaining_stops:
+        if len(remaining_stops) < 1:
             return None
+            
+        # Prepend start location as depot (index 0)
+        locations = [start_location] + remaining_stops
 
-        traffic_multiplier = 1 + event.severity * 0.8  # up to 80% slowdown
+        # Simulate re-optimization with traffic factor
+        traffic_multiplier = 1 + event.severity * 1.5  # up to 150% slowdown
 
+        # Use the existing solver to find a better sequence
         solution = solve_vrp_ortools(
-            locations=remaining_stops,
-            vehicles=[VehicleConfig(id=vehicle_id, capacity_kg=9999, start_location=remaining_stops[0])],
-            max_solve_seconds=10,
+            locations=locations,
+            vehicles=[VehicleConfig(id=vehicle_id, capacity_kg=9999, start_location=locations[0])],
+            max_solve_seconds=5,
             traffic_factor=traffic_multiplier,
         )
 
@@ -118,15 +186,10 @@ class DynamicRerouteEngine:
             logger.debug(f"Reroute for {vehicle_id} saves only {current_eta - new_eta:.1f} min, skipping")
             return None
 
-        logger.info(
-            f"Rerouting vehicle {vehicle_id}: "
-            f"old_eta={current_eta:.1f}min new_eta={new_eta:.1f}min "
-            f"saved={current_eta - new_eta:.1f}min"
-        )
-
         return RerouteDecision(
             vehicle_id=vehicle_id,
-            trigger=f"{event.event_type} at ({event.lat:.4f},{event.lng:.4f})",
+            route_id=route_id,
+            trigger=f"{event.event_type.upper()} detected nearby",
             old_eta_minutes=current_eta,
             new_eta_minutes=new_eta,
             saved_minutes=round(current_eta - new_eta, 1),
@@ -141,6 +204,89 @@ class DynamicRerouteEngine:
     async def _set_cooldown(self, vehicle_id: str) -> None:
         key = f"reroute_cooldown:{vehicle_id}"
         await cache_set(key, "1", ttl=REROUTE_COOLDOWN_SECONDS)
+
+    async def manual_scan(self, db: AsyncSession, vehicle_id_or_plate: str) -> Optional[RerouteDecision]:
+        """
+        Runs a re-optimization scan for a specific vehicle by its UUID or Plate Number.
+        """
+        from app.models.models import Vehicle, Route
+        import uuid
+
+        # 1. Resolve vehicle_id (handle both Plate Number and UUID)
+        target_uid: Optional[uuid.UUID] = None
+        try:
+            target_uid = uuid.UUID(vehicle_id_or_plate)
+        except ValueError:
+            # If not a UUID, look up by plate number
+            v_res = await db.execute(select(Vehicle).where(Vehicle.plate_number == vehicle_id_or_plate))
+            vehicle = v_res.scalar_one_or_none()
+            if vehicle:
+                target_uid = vehicle.id
+            else:
+                logger.warning(f"Could not resolve vehicle identifier: {vehicle_id_or_plate}")
+                return None
+
+        # 2. Find the active/pending route for this vehicle
+        result = await db.execute(
+            select(Route)
+            .where(Route.vehicle_id == target_uid)
+            .where(Route.status.in_(["active", "pending"]))
+            .options(selectinload(Route.stops).selectinload(RouteStop.delivery_point))
+        )
+        route = result.scalar_one_or_none()
+        if not route:
+            logger.debug(f"No active or pending route found for vehicle {vehicle_id_or_plate}")
+            return None
+
+        pending_stops = [s for s in route.stops if s.status == "pending"]
+        if len(pending_stops) < 2:
+            return None
+
+        # 3. Latest telemetry
+        from app.models.models import Telemetry
+        tele_result = await db.execute(
+            select(Telemetry)
+            .where(Telemetry.vehicle_id == target_uid)
+            .order_by(Telemetry.timestamp.desc())
+            .limit(1)
+        )
+        tele = tele_result.scalar_one_or_none()
+        
+        start_loc = Location(
+            id=str(target_uid),
+            lat=tele.latitude if tele else (pending_stops[0].delivery_point.latitude if pending_stops else 0.0),
+            lng=tele.longitude if tele else (pending_stops[0].delivery_point.longitude if pending_stops else 0.0)
+        )
+
+        locations = [
+            Location(
+                id=str(s.delivery_point_id),
+                lat=s.delivery_point.latitude,
+                lng=s.delivery_point.longitude,
+                demand_kg=s.delivery_point.demand_kg
+            )
+            for s in sorted(pending_stops, key=lambda x: x.sequence)
+        ]
+
+        # Use a nominal traffic event to trigger the existing logic
+        mock_event = TrafficEvent(
+            event_id="manual_scan",
+            lat=start_loc.lat,
+            lng=start_loc.lng,
+            radius_km=1.0,
+            severity=0.1,
+            event_type="incubation",
+            started_at=datetime.now(timezone.utc)
+        )
+
+        return await self._reroute_vehicle(
+            vehicle_id=str(target_uid),
+            route_id=str(route.id),
+            remaining_stops=locations,
+            current_eta=route.total_duration_minutes,
+            event=mock_event,
+            start_location=start_loc
+        )
 
 
 # Singleton

@@ -11,7 +11,7 @@ export default function SuperadminPage() {
   const [search, setSearch] = useState('')
   const queryClient = useQueryClient()
 
-  const { data: users = [], isLoading } = useQuery({
+  const { data: users = [] as any[], isLoading } = useQuery<any[]>({
     queryKey: ['users'],
     queryFn: usersAPI.list,
   })

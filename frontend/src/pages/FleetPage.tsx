@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Search, Truck, X, Fuel, Info, AlertCircle, MapPin, BarChart2, Settings } from 'lucide-react'
+import { Plus, Search, Truck, X, Fuel, Info, AlertCircle, MapPin, BarChart2, Settings, Cloud, Thermometer } from 'lucide-react'
 import { vehiclesAPI } from '@/services/api'
 import { Card, StatusDot, Button, Spinner } from '@/components/ui'
 import toast from 'react-hot-toast'
@@ -20,6 +21,7 @@ function AddVehicleModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
     fuel_type: 'diesel',
     fuel_capacity_liters: 60,
     fuel_efficiency_kmpl: 12,
+    spark_id: '',
   })
 
   const mutation = useMutation({
@@ -36,6 +38,7 @@ function AddVehicleModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
         fuel_type: 'diesel',
         fuel_capacity_liters: 60,
         fuel_efficiency_kmpl: 12,
+        spark_id: '',
       })
     },
     onError: (err: any) => {
@@ -120,6 +123,16 @@ function AddVehicleModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             </div>
           </div>
 
+          <div className="space-y-1.5">
+            <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Spark Hardware ID (Optional)</label>
+            <input
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-yellow-400/50 transition-colors mono"
+              placeholder="e.g. SPK-9901"
+              value={formData.spark_id}
+              onChange={e => setFormData({ ...formData, spark_id: e.target.value })}
+            />
+          </div>
+
           <div className="pt-4 flex gap-3">
             <Button variant="ghost" className="flex-1" onClick={onClose} type="button">Cancel</Button>
             <Button variant="accent" className="flex-1" type="submit" disabled={mutation.isPending}>
@@ -134,6 +147,7 @@ function AddVehicleModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 
 export default function FleetPage() {
   const role = useAuthStore(s => s.role)
+  const navigate = useNavigate()
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -224,7 +238,7 @@ export default function FleetPage() {
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50">
-                {['Asset Details', 'Telemetry', 'Status', 'Payload', 'Efficiency', 'Location', 'Actions'].map(h => (
+                {['Asset Details', 'Type', 'Status', 'Fuel Status', 'Intelligence', 'Location', 'Actions'].map(h => (
                   <th key={h} className="px-6 py-5 text-left text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{h}</th>
                 ))}
               </tr>
@@ -257,9 +271,16 @@ export default function FleetPage() {
                     <td className="px-6 py-5">
                       <div className="font-display font-black text-slate-900 text-base group-hover:text-yellow-600 transition-all uppercase tracking-tight">{v.plate_number}</div>
                     </td>
-                    <td className="px-6 py-5">
-                      <div className="text-[10px] font-black uppercase bg-slate-100 border border-slate-200 px-2 py-1 rounded w-fit text-slate-500 tracking-widest">
-                        {v.vehicle_type}
+                    <td className="px-6 py-5 text-left">
+                      <div className="flex flex-col gap-1">
+                        <div className="text-[10px] font-black uppercase bg-slate-100 border border-slate-200 px-2 py-1 rounded w-fit text-slate-500 tracking-widest">
+                          {v.vehicle_type}
+                        </div>
+                        {v.spark_id && (
+                          <div className="text-[9px] font-bold text-yellow-600 bg-yellow-400/10 border border-yellow-400/20 px-2 py-0.5 rounded w-fit uppercase tracking-tighter">
+                            Linked: {v.spark_id}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-5">
@@ -269,21 +290,50 @@ export default function FleetPage() {
                       </div>
                     </td>
                     <td className="px-6 py-5">
-                      <div className="text-xs text-slate-900 font-black tracking-tight">{v.capacity_kg}<span className="text-[10px] text-slate-500 ml-1">KG CAP</span></div>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <Fuel size={12} className="text-yellow-500" />
+                          {/* @ts-ignore */}
+                          <span className="font-display font-black text-xs text-slate-900">{v.current_fuel_liters?.toFixed(1) || '0.0'}</span>
+                          <span className="text-[10px] font-black text-slate-500">/ {v.fuel_capacity_liters || 60}L</span>
+                        </div>
+                        <div className="w-20 bg-slate-200 h-1 rounded-full overflow-hidden">
+                          {/* @ts-ignore */}
+                          <div className="bg-yellow-500 h-full" style={{ width: `${(v.current_fuel_liters / (v.fuel_capacity_liters || 60)) * 100}%` }} />
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-5">
-                      <div className="flex items-center gap-2">
-                        <Fuel size={12} className="text-yellow-500" />
-                        <span className="font-display font-black text-xs text-slate-900 pb-0.5">{v.fuel_efficiency_kmpl}</span>
-                        <span className="text-[10px] font-black text-slate-500">KM/L</span>
+                      <div className="flex items-center gap-3">
+                        {v.status === 'on_route' ? (
+                          <>
+                            <div className="flex items-center gap-1 text-sky-600">
+                              <Cloud size={14} />
+                              <span className="text-[10px] font-black uppercase tracking-tighter">Clear</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-orange-600">
+                              <Thermometer size={14} />
+                              <span className="text-[10px] font-black uppercase tracking-tighter">+0m Traffic</span>
+                            </div>
+                          </>
+                        ) : (
+                          <span className="text-[10px] font-black text-slate-300 uppercase italic tracking-widest">No Intelligence</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-5">
                       <div className="font-mono text-[10px] text-slate-500 leading-tight">
                         {v.latitude ? (
-                          <div className="flex items-center gap-2">
-                            <span className="text-yellow-500">●</span>
-                            <span className="text-slate-600">{v.latitude.toFixed(4)}, {v.longitude.toFixed(4)}</span>
+                          <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-yellow-500">●</span>
+                              <span className="text-slate-600">{v.latitude.toFixed(4)}, {v.longitude.toFixed(4)}</span>
+                            </div>
+                            {v.last_sync && (
+                              <div className="text-[9px] text-slate-400 ml-4 font-bold uppercase tracking-tighter">
+                                Sync: {new Date(v.last_sync).toLocaleTimeString()}
+                              </div>
+                            )}
                           </div>
                         ) : (
                           <span className="text-red-900 font-black">NO SIGNAL</span>
@@ -291,15 +341,21 @@ export default function FleetPage() {
                       </div>
                     </td>
                     <td className="px-6 py-5">
-                      <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
-                          onClick={() => toast.success('Initiating live tracking for ' + v.plate_number + '...')}
+                          onClick={() => {
+                            toast.success('Initiating live tracking for ' + v.plate_number + '...')
+                            navigate('/dashboard?vehicle=' + v.id)
+                          }}
                           className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-yellow-600 transition-colors tooltip tooltip-left" data-tip="Live Tracking"
                         >
                           <MapPin size={16} />
                         </button>
                         <button 
-                          onClick={() => toast.success('Loading analytics for ' + v.plate_number + '...')}
+                          onClick={() => {
+                            toast.success('Loading analytics for ' + v.plate_number + '...')
+                            navigate('/analytics?vehicle=' + v.id)
+                          }}
                           className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-900 transition-colors tooltip tooltip-top" data-tip="Analytics"
                         >
                           <BarChart2 size={16} />

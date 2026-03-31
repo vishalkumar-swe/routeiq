@@ -23,6 +23,7 @@ class Location:
     lat: float
     lng: float
     demand_kg: float = 0.0
+    required_cargo_types: List[str] = field(default_factory=list)
     time_window_start: int = 0    # minutes from midnight
     time_window_end: int = 1440   # minutes from midnight
     service_time: int = 10        # minutes
@@ -33,6 +34,8 @@ class VehicleConfig:
     id: str
     capacity_kg: float
     start_location: Location
+    supported_cargo_types: List[str] = field(default_factory=list)
+    fuel_efficiency_kmpl: float = 10.0  # Default 10 km/L
     end_location: Optional[Location] = None  # None = return to depot
 
 
@@ -43,7 +46,9 @@ class OptimizedRoute:
     total_distance_km: float
     total_duration_minutes: float
     estimated_fuel_liters: float
-    efficiency_score: float
+    traffic_delay_minutes: int = 0
+    weather_condition: str = "clear"
+    efficiency_score: float = 0.0
 
 
 @dataclass
@@ -86,19 +91,43 @@ def solve_vrp_ortools(
     vehicles: List[VehicleConfig],
     max_solve_seconds: int = 30,
     traffic_factor: float = 1.0,
+    **kwargs,
 ) -> VRPSolution:
     """
     Solve VRP using Google OR-Tools constraint programming solver.
     Falls back to nearest-neighbour greedy if OR-Tools unavailable.
     """
     start_time = time.time()
+    
+    # Defensive checks
+    if len(locations) < 2 or not vehicles:
+        logger.warning("Insufficient locations or vehicles for optimization")
+        return VRPSolution(
+            routes=[],
+            total_distance_km=0,
+            total_fuel_liters=0,
+            solve_time_seconds=time.time() - start_time,
+            savings_vs_naive_pct=0,
+            solver_status="no_input",
+        )
 
     try:
         from ortools.constraint_solver import routing_enums_pb2
         from ortools.constraint_solver import pywrapcp
 
-        depot_index = 0  # First location is the depot
         dist_matrix = build_distance_matrix(locations, traffic_factor)
+        depot_index = 0  # Standard depot index (locations[0])
+
+        # Apply Weather Factor (Simulation)
+        weather_factor = kwargs.get("weather_factor", 1.0)
+        dist_matrix = (dist_matrix * weather_factor).astype(np.int64)
+
+        # Apply Road Blockages (Simulation)
+        blockages = kwargs.get("blockages", [])
+        for (u, v) in blockages:
+            if u < len(locations) and v < len(locations):
+                dist_matrix[u][v] = 9999999 # Treat as impassable
+                dist_matrix[v][u] = 9999999
 
         manager = pywrapcp.RoutingIndexManager(len(locations), len(vehicles), depot_index)
         routing = pywrapcp.RoutingModel(manager)
@@ -139,6 +168,21 @@ def solve_vrp_ortools(
         for loc_idx, loc in enumerate(locations):
             index = manager.NodeToIndex(loc_idx)
             time_dim.CumulVar(index).SetRange(loc.time_window_start, loc.time_window_end)
+            
+            # Cargo constraints (New)
+            if loc_idx != depot_index and loc.required_cargo_types:
+                compatible_vehicles = []
+                for v_idx, v in enumerate(vehicles):
+                    # Vehicle must support ALL required types for this location
+                    if all(rt in v.supported_cargo_types for rt in loc.required_cargo_types):
+                        compatible_vehicles.append(v_idx)
+                
+                if compatible_vehicles:
+                    routing.VehicleVar(index).SetValues(compatible_vehicles)
+                else:
+                    # If no vehicle is compatible, this node cannot be served.
+                    # We add a disjunction with a very high penalty so it's skipped.
+                    routing.AddDisjunction([index], 1_000_000)
 
         # Solver parameters
         search_params = pywrapcp.DefaultRoutingSearchParameters()
@@ -175,15 +219,22 @@ def solve_vrp_ortools(
 
             dist_km = route_dist / 1000
             total_dist += dist_km
-            duration = dist_km / 50 * 60  # minutes at 50km/h avg
-            fuel = dist_km / vehicle.capacity_kg * 12  # simplified
+            
+            # Duration logic: Base speed 50km/h + traffic/weather impact
+            base_duration = (dist_km / 50) * 60
+            total_duration = base_duration * traffic_factor * weather_factor
+            traffic_delay = int(total_duration - base_duration) if traffic_factor > 1.0 else 0
+            
+            fuel = dist_km / vehicle.fuel_efficiency_kmpl
 
             routes.append(OptimizedRoute(
                 vehicle_id=vehicle.id,
                 stop_ids=stop_ids,
                 total_distance_km=round(dist_km, 2),
-                total_duration_minutes=round(duration, 1),
+                total_duration_minutes=round(total_duration, 1),
                 estimated_fuel_liters=round(fuel, 2),
+                traffic_delay_minutes=traffic_delay,
+                weather_condition="stormy" if weather_factor > 1.2 else ("rainy" if weather_factor > 1.1 else "clear"),
                 efficiency_score=_score(dist_km, len(stop_ids)),
             ))
 

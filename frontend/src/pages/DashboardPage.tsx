@@ -1,13 +1,23 @@
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Truck, Clock, Fuel, TrendingUp, Zap } from 'lucide-react'
-import { dashboardAPI, vehiclesAPI } from '@/services/api'
+import { Truck, Clock, Fuel, TrendingUp, Zap, Filter, Activity } from 'lucide-react'
+import { dashboardAPI, vehiclesAPI, telemetryWS } from '@/services/api'
 import { KPICard, Card, CardHeader, Spinner } from '@/components/ui'
+import toast from 'react-hot-toast'
 import LiveMap from '@/components/map/LiveMap'
 import DeliveryChart from '@/components/dashboard/DeliveryChart'
 import AlertFeed from '@/components/dashboard/AlertFeed'
 import { AIInsightCard } from '@/components/dashboard/AIInsightCard'
+import { STATUS_COLORS, CARGO_EMOJI } from '@/config/mapConfig'
 
 export default function DashboardPage() {
+  const [searchParams] = useSearchParams()
+  const selectedVehicleId = searchParams.get('vehicle')
+  const [filter, setFilter] = useState<'all' | 'moving' | 'idle'>('all')
+  const [liveTelemetry, setLiveTelemetry] = useState<Record<string, any>>({})
+  const [alerts, setAlerts] = useState<any[]>([])
+
   const { data: kpis, isLoading } = useQuery({
     queryKey: ['kpis'],
     queryFn: dashboardAPI.kpis,
@@ -16,8 +26,47 @@ export default function DashboardPage() {
 
   const { data: vehicles = [] } = useQuery({
     queryKey: ['vehicles', 'live'],
-    queryFn: () => vehiclesAPI.list({ limit: 8 }),
-    refetchInterval: 10_000,
+    queryFn: () => vehiclesAPI.list({ limit: 20 }),
+    refetchInterval: 60_000, // Background refresh
+  })
+
+  useEffect(() => {
+    const ws = telemetryWS.connect((msg) => {
+      if (msg.type === 'TELEMETRY_UPDATE') {
+        setLiveTelemetry(prev => ({
+          ...prev,
+          [msg.data.vehicle_id]: msg.data
+        }))
+      } else if (msg.type === 'VEHICLE_OFFLINE' || msg.type === 'ALERT_CRITICAL' || msg.type === 'ALERT_WARNING') {
+        const isCritical = msg.type === 'ALERT_CRITICAL' || msg.type === 'VEHICLE_OFFLINE'
+        const newAlert = {
+          id: Date.now(),
+          type: isCritical ? 'critical' : 'warning',
+          title: msg.title || (isCritical ? 'Critical Event' : 'Fleet Warning'),
+          desc: msg.message || msg.data?.message || `${msg.data?.plate_number} has lost connection.`,
+          time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+        }
+        setAlerts(prev => [newAlert, ...prev].slice(0, 10)) // Keep last 10
+      }
+    })
+    return () => ws.close()
+  }, [])
+
+  useEffect(() => {
+    if (selectedVehicleId && vehicles.length > 0) {
+      const v = vehicles.find((v: any) => v.id === selectedVehicleId)
+      if (v) {
+        toast.success(`Tracking vehicle ${v.plate_number}...`, { id: 'track-v' })
+      }
+    }
+  }, [selectedVehicleId, vehicles])
+
+  const filteredVehicles = vehicles.filter((v: any) => {
+    const live = liveTelemetry[v.id]
+    if (filter === 'all') return true
+    if (filter === 'moving') return (live?.speed > 0 || v.status === 'on_route')
+    if (filter === 'idle') return (!live || live?.speed === 0 || v.status === 'available')
+    return true
   })
 
   const now = new Date()
@@ -25,30 +74,44 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div className="flex items-end justify-between">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-5xl font-black tracking-tighter text-slate-900 uppercase leading-none">
-            Fleet <span className="text-yellow-500">Operations</span>
+            Cargo <span className="text-yellow-500">Control</span> Tower
           </h1>
           <p className="text-slate-500 font-bold tracking-tight mt-3 flex items-center gap-2">
-            <Clock size={14} />
-            {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+            <Activity size={14} className="text-yellow-600" />
+            Live Fleet Intelligence Platform
             <span className="opacity-30">|</span>
             {now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} IST
           </p>
         </div>
-        <div className="flex gap-3">
-          <div className="flex items-center gap-3 px-5 py-2.5 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl text-xs font-black text-yellow-600 uppercase tracking-widest shadow-sm">
-            <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(249,201,53,0.8)]" />
-            AI Optimizer Active
-          </div>
+        
+        <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner">
+          {[
+            { id: 'all', label: 'All Fleet' },
+            { id: 'moving', label: 'In Transit' },
+            { id: 'idle', label: 'Parked' },
+          ].map(f => (
+            <button
+              key={f.id}
+              onClick={() => setFilter(f.id as any)}
+              className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                filter === f.id 
+                  ? 'bg-white text-slate-900 shadow-sm' 
+                  : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <KPICard
-          label="Active Vehicles"
+          label="Active Cargo"
           value={isLoading ? '—' : String(kpis?.active_vehicles ?? 47)}
           delta="+6.2%" deltaUp
           icon={<Truck size={20} className="text-yellow-400" />}
@@ -56,15 +119,15 @@ export default function DashboardPage() {
           progress={78}
         />
         <KPICard
-          label="On-Time Rate"
+          label="Delivery Success"
           value={isLoading ? '—' : `${kpis?.on_time_rate_pct ?? 94}%`}
-          delta="+12%" deltaUp
+          delta="+1.2%" deltaUp
           icon={<Clock size={20} className="text-slate-900" />}
           color="#0F172A"
           progress={kpis?.on_time_rate_pct ?? 94}
         />
         <KPICard
-          label="Fuel Cost Today"
+          label="Fuel Offset"
           value={isLoading ? '—' : `₹${((kpis?.fuel_cost_today ?? 210000) / 100000).toFixed(1)}L`}
           delta="-8.4%"
           icon={<Fuel size={20} className="text-orange-500" />}
@@ -72,7 +135,7 @@ export default function DashboardPage() {
           progress={56}
         />
         <KPICard
-          label="AI Fuel Saved"
+          label="AI Efficiency"
           value={isLoading ? '—' : `${kpis?.fuel_saved_pct ?? 18.2}%`}
           delta="+3.1%" deltaUp
           icon={<TrendingUp size={20} className="text-yellow-500" />}
@@ -82,60 +145,67 @@ export default function DashboardPage() {
       </div>
 
       {/* Map + Fleet List */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
-        <div className="rounded-[24px] bg-[#0A0F1C] border border-slate-800 flex flex-col overflow-hidden shadow-2xl">
-          <div className="px-6 pt-6 pb-4 flex justify-between items-start">
-            <div>
-              <h2 className="text-xl font-bold text-white tracking-tight">Live Route Map</h2>
-              <p className="text-slate-400 text-sm mt-1">Real-time vehicle positions · AI-optimized corridors</p>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
+        <div className="rounded-[40px] bg-[#0A0F1C] border border-slate-800 flex flex-col overflow-hidden shadow-2xl relative">
+          <div className="absolute top-8 left-8 z-10 pointer-events-none">
+             <div className="bg-slate-900/40 backdrop-blur-xl border border-white/5 px-6 py-4 rounded-3xl shadow-2xl">
+                <h2 className="text-lg font-black text-white tracking-tight uppercase italic italic-none">Live <span className="text-yellow-500">Geospatial</span> Grid</h2>
+                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1 opacity-60">High-Density Telemetry Pipe Active</p>
+             </div>
           </div>
-          <div className="px-6 pb-6 h-[400px]">
-            <LiveMap vehicles={vehicles} />
+          <div className="h-[600px]">
+            <LiveMap vehicles={vehicles} selectedVehicleId={selectedVehicleId} />
           </div>
         </div>
 
-        <div className="rounded-[24px] bg-[#0A0F1C] border border-slate-800 flex flex-col overflow-hidden shadow-2xl">
-          <div className="px-6 pt-6 pb-4 flex justify-between items-center border-b border-slate-800/50">
+        <div className="rounded-[40px] bg-white border border-slate-200 flex flex-col overflow-hidden shadow-xl">
+          <div className="px-8 pt-8 pb-6 flex justify-between items-center border-b border-slate-100">
             <div>
-              <h2 className="text-xl font-bold text-white tracking-tight">Active Fleet</h2>
-              <p className="text-slate-400 text-sm mt-1">Live positions & ETA</p>
+              <h2 className="text-xl font-black text-slate-900 tracking-tighter uppercase">Cargo <span className="text-yellow-500">Fleet</span></h2>
+              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Real-time Telemetry</p>
             </div>
-            <div className="px-3 py-1.5 rounded-lg border border-[#10b981]/30 bg-[#10b981]/10 text-[#10b981] text-xs font-mono font-bold tracking-widest">
-              {kpis?.active_vehicles ?? 47} ONLINE
+            <div className="px-4 py-2 rounded-2xl bg-slate-900 text-white text-[10px] font-black tracking-widest">
+              {filteredVehicles.length} ONLINE
             </div>
           </div>
-          <div className="px-6 pb-6 pt-2 flex-1 overflow-y-auto space-y-1">
-            {vehicles.length === 0 ? (
-              <div className="py-12 flex justify-center"><Spinner /></div>
+          <div className="px-6 pb-8 pt-4 flex-1 overflow-y-auto space-y-2">
+            {isLoading ? (
+              <div className="py-20 flex justify-center"><Spinner /></div>
+            ) : filteredVehicles.length === 0 ? (
+              <div className="py-20 text-center text-slate-400 text-xs font-bold uppercase">No vehicles match filter</div>
             ) : (
-              vehicles.slice(0, 7).map((v: any, i: number) => {
-                const colors = ['#10b981', '#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#10b981', '#10b981']
-                const dotColor = colors[i % colors.length]
-                const isOffline = dotColor === '#ef4444'
-                const isDelayed = dotColor === '#f59e0b'
-                const emoji = v.vehicle_type === 'truck' ? '🚛' : (v.vehicle_type === 'van' ? '🚐' : '🏍️')
+              filteredVehicles.map((v: any, i: number) => {
+                const live = liveTelemetry[v.id]
+                const dotColor = STATUS_COLORS[v.status] || '#94a3b8'
+                const emoji = v.vehicle_type === 'truck' ? '🚛' : (v.vehicle_type === 'van' ? '🚐' : (v.vehicle_type === 'bike' ? '🏍️' : '🚗'))
+                const speed = live?.speed || 0
+                const primaryCargo = v.cargo_types?.[0] || 'general'
+                const cargoEmoji = CARGO_EMOJI[primaryCargo] || ''
 
                 return (
-                  <div key={v.id} className="flex items-center gap-4 py-3.5 border-b border-slate-800/50 hover:bg-slate-800/20 -mx-3 px-3 rounded-xl transition-colors">
-                    <div className="w-11 h-11 rounded-xl flex items-center justify-center text-lg flex-shrink-0 border" style={{ backgroundColor: `${dotColor}10`, borderColor: `${dotColor}30` }}>
+                  <div key={v.id} className="group relative flex items-center gap-4 p-4 rounded-3xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all">
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 bg-slate-100 border border-slate-200 group-hover:bg-white group-hover:scale-110 transition-transform shadow-sm relative">
                       {emoji}
+                      <span className="absolute -top-1 -right-1 text-[10px] bg-white rounded-full w-5 h-5 flex items-center justify-center shadow-sm border border-slate-100">
+                        {cargoEmoji}
+                      </span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <div className="font-bold text-white text-[13px] flex items-center gap-2">
-                          Vehicle-{String(i * 3 + 4).padStart(2, '0')} <span className="w-1.5 h-1.5 rounded-full shadow-sm" style={{ backgroundColor: dotColor, boxShadow: `0 0 6px ${dotColor}` }} />
+                        <div className="font-black text-slate-900 text-sm flex items-center gap-2">
+                          {v.plate_number} 
+                          <span className={`w-2 h-2 rounded-full ${speed > 0 ? 'animate-pulse' : ''}`} style={{ backgroundColor: dotColor, boxShadow: `0 0 8px ${dotColor}60` }} />
                         </div>
-                        <div className="font-mono font-bold text-[11px]" style={{ color: dotColor }}>
-                          {isOffline ? 'Offline' : (isDelayed ? '+18 min' : `${Math.floor(Math.random() * 30 + 5)} min`)}
+                        <div className="font-mono font-black text-[12px]" style={{ color: speed > 0 ? '#10b981' : '#94a3b8' }}>
+                          {speed > 0 ? `${speed.toFixed(0)} KM/H` : 'STATIONARY'}
                         </div>
                       </div>
-                      <div className="flex items-center justify-between mt-1 text-[11px]">
-                        <div className="text-slate-400 truncate pr-4">
-                          {isOffline ? 'Faridabad → Saket · Maintenance' : 'Connaught Pl → IGI Airport · 3 stops l...'}
+                      <div className="flex items-center justify-between mt-1 text-[11px] font-bold">
+                        <div className="text-slate-500 truncate pr-4 uppercase tracking-tight">
+                          {v.status === 'on_route' ? 'Active Mission · Primary Route' : 'Awaiting Orders · Idle'}
                         </div>
-                        <div className="text-slate-500 font-mono">
-                          {isOffline ? 'Engine alert' : (isDelayed ? 'Rerouting...' : `${Math.floor(Math.random() * 40 + 60)}% done`)}
+                        <div className="text-slate-400 font-mono">
+                          {live ? 'LIVE' : 'SYNCING...'}
                         </div>
                       </div>
                     </div>
@@ -147,27 +217,26 @@ export default function DashboardPage() {
         </div>
       </div>
 
-
       {/* Charts + Alerts */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <DeliveryChart />
-        <AlertFeed />
-        <Card className="border-slate-200 bg-white shadow-sm">
-          <CardHeader title="Optimization Score" subtitle="AI efficiency metrics" />
-          <div className="px-6 pb-6 space-y-6">
+        <AlertFeed alerts={alerts} />
+        <Card className="border-slate-200 bg-white shadow-xl rounded-[40px] overflow-hidden">
+          <CardHeader title="System Pulse" subtitle="Infrastructure load metrics" />
+          <div className="px-8 pb-8 space-y-8">
             {[
-              { label: 'Route Efficiency', value: 87, color: '#F9C935' },
-              { label: 'Fuel Optimization', value: 72, color: '#0F172A' },
-              { label: 'Time Window Adherence', value: 94, color: '#FFB800' },
-              { label: 'Load Utilization', value: 68, color: '#FF6B35' },
-            ].map(({ label, value, color }) => (
+              { label: 'Network Latency', value: 12, color: '#10b981', suffix: 'ms' },
+              { label: 'Data Throughput', value: 94, color: '#0F172A', suffix: '%' },
+              { label: 'ML Prediction Acc', value: 98, color: '#F9C935', suffix: '%' },
+              { label: 'Fleet Sync Rate', value: 100, color: '#F59E0B', suffix: '%' },
+            ].map(({ label, value, color, suffix }) => (
               <div key={label} className="group">
-                <div className="flex justify-between mb-2 text-[10px] font-black uppercase tracking-wider">
-                  <span className="text-slate-500">{label}</span>
-                  <span style={{ color }}>{value}%</span>
+                <div className="flex justify-between mb-3 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                  <span>{label}</span>
+                  <span style={{ color }}>{value}{suffix}</span>
                 </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full rounded-full transition-all duration-1000 ease-out shadow-sm" style={{ width: `${value}%`, background: color }} />
+                <div className="h-3 bg-slate-100 rounded-full overflow-hidden p-0.5">
+                  <div className="h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${value}%`, background: color }} />
                 </div>
               </div>
             ))}
@@ -176,34 +245,12 @@ export default function DashboardPage() {
       </div>
 
       {/* AI Pulse Insight */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <AIInsightCard 
-          title="Neural Route Optimization"
-          insight="Autonomous rerouting of 12 vehicles has saved 42kg of CO2 and ₹14,200 in fuel costs in the last 4 hours."
-          score={98.2}
-          trend="up"
-        />
-        <div className="relative overflow-hidden rounded-[2rem] bg-white border border-slate-200 p-8 flex flex-col justify-center shadow-sm">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 rounded-2xl bg-yellow-400 text-slate-900 shadow-sm">
-              <Zap size={24} />
-            </div>
-            <div>
-              <h3 className="text-xl font-black text-slate-900 font-display tracking-tight uppercase">Intelligence Active</h3>
-              <p className="text-slate-500 text-xs font-bold tracking-widest uppercase">Global Fleet Syncing</p>
-            </div>
-          </div>
-          <div className="space-y-3">
-             <div className="flex justify-between text-[10px] font-black uppercase text-slate-500">
-               <span>Processing Power</span>
-               <span className="text-yellow-600">92%</span>
-             </div>
-             <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-               <div className="h-full bg-yellow-400 w-[92%] shadow-sm" />
-             </div>
-          </div>
-        </div>
-      </div>
+      <AIInsightCard 
+        title="Predictive Fleet Optimization"
+        insight="Our neural engine has identified a high-traffic cluster near Okhla. Rerouting 4 heavy-duty trucks to the Outer Ring Road will prevent a cumulative 82-minute delay across the cargo manifest."
+        score={98.2}
+        trend="up"
+      />
     </div>
   )
 }

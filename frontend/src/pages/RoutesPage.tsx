@@ -1,9 +1,11 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { routesAPI } from '@/services/api'
 import { Card, Badge, StatusDot } from '@/components/ui'
 import { format } from 'date-fns'
+import toast from 'react-hot-toast'
 
 export default function RoutesPage() {
+  const queryClient = useQueryClient()
   const { data: routes = [], isLoading } = useQuery({
     queryKey: ['routes'],
     queryFn: () => routesAPI.list({ limit: 50 }),
@@ -25,7 +27,7 @@ export default function RoutesPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #E2E8F0', backgroundColor: '#F8FAFC' }}>
-              {['Route ID', 'Vehicle', 'Status', 'Distance', 'Duration', 'Fuel Est.', 'Score', 'Created'].map(h => (
+              {['Route ID', 'Vehicle', 'Status', 'Distance', 'Duration', 'Fuel Est.', 'Score', 'Created', 'Actions'].map(h => (
                 <th key={h} style={{
                   padding: '12px 16px', textAlign: 'left',
                   fontSize: 11, color: '#64748B',
@@ -69,6 +71,28 @@ export default function RoutesPage() {
                 </td>
                 <td style={{ padding: '12px 16px', color: '#64748B', fontSize: 11, fontWeight: 500 }}>
                   {format(new Date(r.created_at), 'dd MMM, HH:mm')}
+                </td>
+                <td style={{ padding: '12px 16px' }}>
+                  {r.status === 'pending' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        routesAPI.updateStatus(r.id, 'active').then(() => {
+                          toast.success('Route dispatched! Vehicle marked as on_route.');
+                          queryClient.invalidateQueries({ queryKey: ['routes'] });
+                          queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+                        });
+                      }}
+                      style={{
+                        padding: '6px 12px', borderRadius: 8, fontSize: 10,
+                        fontWeight: 800, textTransform: 'uppercase',
+                        background: '#10b981', color: '#FFFFFF', border: 'none',
+                        cursor: 'pointer', boxShadow: '0 2px 4px rgba(16,185,129,0.2)'
+                      }}
+                    >
+                      Dispatch
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

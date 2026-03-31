@@ -16,6 +16,8 @@
   --accent-glow: rgba(234, 179, 8, 0.15);
   --accent-secondary: #0F172A; /* slate-900 */
   --accent-tertiary: #FDE047;
+  --accent2: #EF4444;
+  --accent3: #3B82F6;
   
   --warn: #F59E0B;
   --error: #EF4444;

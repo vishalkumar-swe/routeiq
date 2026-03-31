@@ -35,11 +35,12 @@ const badgeStyles: Record<BadgeVariant, string> = {
   muted:  'bg-slate-800/50 text-slate-400 border-slate-700/50',
 }
 
-export function Badge({ children, variant = 'green' }: { children: ReactNode; variant?: BadgeVariant }) {
+export function Badge({ children, variant = 'green', className }: { children: ReactNode; variant?: BadgeVariant; className?: string }) {
   return (
     <span className={clsx(
       'text-[10px] font-black uppercase tracking-[0.15em] px-3 py-1 rounded-lg border mono transition-all',
-      badgeStyles[variant]
+      badgeStyles[variant],
+      className
     )}>
       {children}
     </span>

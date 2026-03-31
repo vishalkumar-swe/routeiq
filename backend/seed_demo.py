@@ -1,4 +1,4 @@
-
+import os
 import asyncio
 import uuid
 from sqlalchemy import select
@@ -8,10 +8,10 @@ from app.core.security import hash_password
 
 async def seed_users():
     users_data = [
-        {"email": "superadmin@routeiq.io", "full_name": "Chief Operations", "password": "SuperAdmin123!", "role": "superadmin"},
-        {"email": "admin@routeiq.io", "full_name": "Fleet Administrator", "password": "Admin1234!", "role": "admin"},
-        {"email": "manager@routeiq.io", "full_name": "Station Manager", "password": "Manager123!", "role": "manager"},
-        {"email": "driver@routeiq.io", "full_name": "Lokesh Kumar", "password": "Driver123!", "role": "driver"},
+        {"email": "superadmin@routeiq.io", "full_name": "Chief Operations", "password": os.getenv("SEED_SUPERADMIN_PASSWORD", "SuperAdmin123!"), "role": "superadmin"},
+        {"email": "admin@routeiq.io", "full_name": "Fleet Administrator", "password": os.getenv("SEED_ADMIN_PASSWORD", "Admin1234!"), "role": "admin"},
+        {"email": "manager@routeiq.io", "full_name": "Station Manager", "password": os.getenv("SEED_MANAGER_PASSWORD", "Manager123!"), "role": "manager"},
+        {"email": "driver@routeiq.io", "full_name": "Lokesh Kumar", "password": os.getenv("SEED_DRIVER_PASSWORD", "Driver123!"), "role": "driver"},
     ]
 
     async with AsyncSessionLocal() as session:

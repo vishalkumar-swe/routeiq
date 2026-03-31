@@ -10,10 +10,14 @@ def anyio_backend():
     return "asyncio"
 
 
+from asgi_lifespan import LifespanManager
+
 @pytest_asyncio.fixture
 async def client():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-        yield c
+    async with LifespanManager(app) as manager:
+        async with AsyncClient(transport=ASGITransport(app=manager.app), base_url="http://test") as c:
+            yield c
+
 
 
 @pytest.mark.anyio

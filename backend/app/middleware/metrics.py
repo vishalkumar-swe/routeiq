@@ -20,11 +20,22 @@ REQUEST_LATENCY = Histogram(
 class PrometheusMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         start = time.perf_counter()
-        response = await call_next(request)
-        duration = time.perf_counter() - start
+        
+        # Determine normalized endpoint path
+        if request.scope.get("route"):
+            endpoint = request.scope["route"].path
+        else:
+            endpoint = request.url.path
 
-        endpoint = request.url.path
-        REQUEST_COUNT.labels(request.method, endpoint, response.status_code).inc()
-        REQUEST_LATENCY.labels(request.method, endpoint).observe(duration)
+        try:
+            response = await call_next(request)
+            status_code = response.status_code
+        except Exception as e:
+            status_code = 500
+            raise e
+        finally:
+            duration = time.perf_counter() - start
+            REQUEST_COUNT.labels(request.method, endpoint, status_code).inc()
+            REQUEST_LATENCY.labels(request.method, endpoint).observe(duration)
 
         return response

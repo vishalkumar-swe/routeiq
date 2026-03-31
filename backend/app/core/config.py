@@ -1,6 +1,9 @@
 import os
 from functools import lru_cache
+from dotenv import load_dotenv
 from typing import List
+
+load_dotenv()
 
 # from pydantic_settings import BaseSettings
 
@@ -32,18 +35,40 @@ class Settings:
     GOOGLE_MAPS_API_KEY: str = os.getenv("GOOGLE_MAPS_API_KEY", "")
     OPENWEATHER_API_KEY: str = os.getenv("OPENWEATHER_API_KEY", "")
     TOMTOM_API_KEY: str = os.getenv("TOMTOM_API_KEY", "")
+    MAPBOX_ACCESS_TOKEN: str = os.getenv("MAPBOX_ACCESS_TOKEN", "")
+
+    # SparkGPS (Roadcast) Integration
+    SPARK_GPS_API_URL: str = os.getenv("SPARK_GPS_API_URL", "https://api.roadcast.in/v1")
+    SPARK_GPS_API_TOKEN: str = os.getenv("SPARK_GPS_API_TOKEN", "")
+    SPARK_GPS_USERNAME: str = os.getenv("SPARK_GPS_USERNAME", "")
+    SPARK_GPS_PASSWORD: str = os.getenv("SPARK_GPS_PASSWORD", "")
 
     # AWS
     AWS_REGION: str = os.getenv("AWS_REGION", "ap-south-1")
     AWS_S3_BUCKET: str = os.getenv("AWS_S3_BUCKET", "")
 
+    # Optimization
+    @property
+    def TRAFFIC_FACTOR_MULTIPLIER(self) -> float:
+        return float(os.getenv("TRAFFIC_FACTOR_MULTIPLIER", "0.6"))
+
+    @property
+    def WEATHER_FACTOR_MULTIPLIER(self) -> float:
+        return float(os.getenv("WEATHER_FACTOR_MULTIPLIER", "0.4"))
+
     # CORS
-    ALLOWED_ORIGINS: List[str] = [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:3005",
-        "http://127.0.0.1:3005"
-    ]
+    @property
+    def ALLOWED_ORIGINS(self) -> List[str]:
+        origins = os.getenv("ALLOWED_ORIGINS", "")
+        if origins:
+            return [o.strip() for o in origins.split(",")]
+        # Default development origins
+        return [
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "http://localhost:3005",
+            "http://127.0.0.1:3005"
+        ]
 
     @property
     def is_production(self) -> bool:

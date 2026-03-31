@@ -1,14 +1,14 @@
 """Route management endpoints."""
 import uuid
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role
-from app.models.models import Route
-from app.schemas.schemas import RouteResponse, TokenData
+from app.models.models import Route, DeliveryPoint, RouteStop
+from app.schemas.schemas import RouteResponse, TokenData, PaginatedResponse, DeliveryPointResponse
 
 router = APIRouter()
 
@@ -22,7 +22,10 @@ async def list_routes(
     token: TokenData = Depends(get_current_user),
 ):
     from app.models.models import Vehicle
-    q = select(Route)
+    q = select(Route).options(
+        joinedload(Route.vehicle), 
+        selectinload(Route.stops).joinedload(RouteStop.delivery_point)
+    )
     if token.role == "driver":
         q = q.join(Vehicle).where(Vehicle.driver_id == uuid.UUID(token.user_id))
     
@@ -31,8 +34,17 @@ async def list_routes(
     if vehicle_id:
         q = q.where(Route.vehicle_id == vehicle_id)
         
-    q = q.offset(skip).limit(limit)
+    q = q.order_by(Route.created_at.desc()).offset(skip).limit(limit)
     result = await db.execute(q)
+    return result.scalars().all()
+
+
+@router.get("/delivery-points", response_model=List[DeliveryPointResponse])
+async def list_delivery_points(
+    db: AsyncSession = Depends(get_db),
+    _: TokenData = Depends(get_current_user),
+):
+    result = await db.execute(select(DeliveryPoint))
     return result.scalars().all()
 
 
@@ -44,8 +56,14 @@ async def get_route(
 ):
     from app.models.models import Vehicle
     result = await db.execute(
-        select(Route).options(joinedload(Route.vehicle)).where(Route.id == route_id)
+        select(Route)
+        .options(
+            joinedload(Route.vehicle), 
+            selectinload(Route.stops).joinedload(RouteStop.delivery_point)
+        )
+        .where(Route.id == route_id)
     )
+
     route = result.scalar_one_or_none()
     if not route:
         raise HTTPException(status_code=404, detail="Route not found")
@@ -56,6 +74,7 @@ async def get_route(
     return route
 
 
+
 @router.patch("/{route_id}/status")
 async def update_route_status(
     route_id: uuid.UUID,
@@ -63,10 +82,65 @@ async def update_route_status(
     db: AsyncSession = Depends(get_db),
     token: TokenData = Depends(get_current_user),
 ):
-    result = await db.execute(select(Route).where(Route.id == route_id))
+    result = await db.execute(select(Route).options(joinedload(Route.vehicle)).where(Route.id == route_id))
     route = result.scalar_one_or_none()
     if not route:
         raise HTTPException(status_code=404, detail="Route not found")
-    route.status = body.get("status", route.status)
+    
+    new_status = body.get("status")
+    if new_status:
+        route.status = new_status
+        # Handle side effects on vehicle
+        if new_status in ["in_progress", "active"]:
+            route.vehicle.status = "on_route"
+        elif new_status in ["completed", "cancelled"]:
+            route.vehicle.status = "available"
+            
     await db.flush()
-    return {"id": str(route.id), "status": route.status}
+    await db.commit()
+    return {"id": str(route.id), "status": route.status, "vehicle_status": route.vehicle.status}
+
+
+@router.post("/{route_id}/reroute")
+async def apply_reroute(
+    route_id: uuid.UUID,
+    body: Dict[str, Any],
+    db: AsyncSession = Depends(get_db),
+    token: TokenData = Depends(get_current_user),
+):
+    """
+    Applies a new stop sequence to an active route (Rerouting).
+    """
+    if token.role not in ["admin", "superadmin", "manager"]:
+        raise HTTPException(status_code=403, detail="Not authorized to apply reroutes")
+        
+    new_sequence = body.get("new_sequence") # List of DP IDs
+    if not new_sequence:
+        raise HTTPException(status_code=400, detail="new_sequence is required")
+        
+    from app.models.models import RouteStop
+    result = await db.execute(
+        select(Route)
+        .options(selectinload(Route.stops))
+        .where(Route.id == route_id)
+    )
+    route = result.scalar_one_or_none()
+    if not route:
+        raise HTTPException(status_code=404, detail="Route not found")
+        
+    # Re-sequence pending stops
+    # Note: we only re-order stops that are still 'pending'
+    stop_map = {str(s.delivery_point_id): s for s in route.stops if s.status == "pending"}
+    
+    for i, dp_id in enumerate(new_sequence):
+        if dp_id in stop_map:
+            stop_map[dp_id].sequence = i
+            
+    # Clear suggestions from cache for this vehicle
+    from app.core.redis import cache_get, cache_set
+    existing = await cache_get("active_reroute_suggestions") or []
+    updated = [s for s in existing if s['vehicle_id'] != str(route.vehicle_id)]
+    await cache_set("active_reroute_suggestions", updated, ttl=3600)
+            
+    await db.commit()
+    return {"status": "rerouted", "route_id": str(route_id), "new_sequence_count": len(new_sequence)}

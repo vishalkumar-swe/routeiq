@@ -52,6 +52,7 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
         access_token=create_access_token(token_data),
         refresh_token=create_refresh_token(token_data),
         role=str(user.role),
+        user_id=user.id,
     )
 
 
@@ -73,7 +74,9 @@ async def refresh(body: dict, db: AsyncSession = Depends(get_db)):
         access_token=create_access_token(td),
         refresh_token=create_refresh_token(td),
         role=str(user.role),
+        user_id=user.id,
     )
+
 
 
 @router.post("/logout")

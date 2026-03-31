@@ -6,7 +6,8 @@ interface AuthState {
   refreshToken: string | null
   role: string | null
   userId: string | null
-  setAuth: (token: string, refreshToken: string, role: string) => void
+  setAuth: (token: string, refreshToken: string, role: string, userId: string) => void
+
   clearAuth: () => void
 }
 
@@ -17,9 +18,10 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       role: null,
       userId: null,
-      setAuth: (token, refreshToken, role) => set({ token, refreshToken, role }),
-      clearAuth: () => set({ token: null, refreshToken: null, role: null, userId: null }),
-    }),
+  setAuth: (token: string, refreshToken: string, role: string, userId: string) => set({ token, refreshToken, role, userId }),
+  clearAuth: () => set({ token: null, refreshToken: null, role: null, userId: null }),
+}),
+
     { name: 'routeiq-auth' }
   )
 )

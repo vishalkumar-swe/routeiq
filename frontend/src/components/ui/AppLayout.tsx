@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { 
   LayoutDashboard, Truck, Map, BarChart3, Zap, 
-  LogOut, Shield, Brain
+  LogOut, Shield, Brain, Package
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { authAPI } from '@/services/api'
@@ -17,6 +17,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/shipments', icon: Package,         label: 'Shipments', roles: ['admin', 'manager', 'superadmin'] },
   { to: '/fleet',     icon: Truck,           label: 'Fleet', roles: ['admin', 'manager', 'superadmin'] },
   { to: '/routes',    icon: Map,             label: 'Routes' },
   { to: '/optimize',  icon: Zap,             label: 'Optimize', roles: ['admin', 'manager', 'superadmin'] },

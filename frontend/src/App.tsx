@@ -9,6 +9,8 @@ import AnalyticsPage from '@/pages/AnalyticsPage'
 import OptimizePage from '@/pages/OptimizePage'
 import SuperadminPage from '@/pages/SuperadminPage'
 import AIHubPage from '@/pages/AIHubPage'
+import ShipmentsPage from '@/pages/ShipmentsPage'
+import DriverPage from '@/pages/DriverPage'
 
 function PrivateRoute({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) {
   const token = useAuthStore(s => s.token)
@@ -28,6 +30,11 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/driver" element={
+          <PrivateRoute allowedRoles={['superadmin', 'admin', 'manager', 'driver']}>
+            <DriverPage />
+          </PrivateRoute>
+        } />
         <Route path="/" element={
           <PrivateRoute>
             <AppLayout />
@@ -35,6 +42,11 @@ export default function App() {
         }>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="shipments" element={
+            <PrivateRoute allowedRoles={['superadmin', 'admin', 'manager']}>
+              <ShipmentsPage />
+            </PrivateRoute>
+          } />
           <Route path="fleet" element={
             <PrivateRoute allowedRoles={['superadmin', 'admin', 'manager']}>
               <FleetPage />

@@ -23,7 +23,8 @@ export default function LoginPage() {
     
     try {
       const data = await authAPI.login(targetEmail, targetPass)
-      setAuth(data.access_token, data.refresh_token, data.role)
+      setAuth(data.access_token, data.refresh_token, data.role, data.user_id)
+
       toast.success(`Welcome back, ${data.role}!`)
       if (data.role === 'superadmin') {
         navigate('/superadmin')

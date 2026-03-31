@@ -1,13 +1,13 @@
 """Telemetry endpoints — live GPS & vehicle data ingestion."""
 import uuid
 from typing import List
-from fastapi import APIRouter, Depends, Query, HTTPException, status
+from fastapi import APIRouter, Depends, Query, HTTPException, status, WebSocket
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.core.redis import cache_set
-from app.models.models import Telemetry, Vehicle
+from app.models.models import Telemetry, Vehicle, VehicleStoppage
 from app.schemas.schemas import TelemetryCreate, TelemetryResponse, TokenData
 
 router = APIRouter()
@@ -19,33 +19,27 @@ async def ingest_telemetry(
     db: AsyncSession = Depends(get_db),
     token: TokenData = Depends(get_current_user),
 ):
-    # Check authorization if driver
-    result = await db.execute(select(Vehicle).where(Vehicle.id == payload.vehicle_id))
-    vehicle = result.scalar_one_or_none()
-    if not vehicle:
-        raise HTTPException(status_code=404, detail="Vehicle not found")
-        
-    if token.role == "driver" and vehicle.driver_id != uuid.UUID(token.user_id):
-        raise HTTPException(status_code=403, detail="Not authorized for this vehicle")
+    from app.services.telemetry_service import TelemetryService
+    
+    try:
+        t = await TelemetryService.ingest_telemetry(db, payload.model_dump())
+        return t
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Telemetry Ingestion Failed: {str(e)}")
 
-    t = Telemetry(**payload.model_dump())
-    db.add(t)
 
-    # Update vehicle live position in DB
-    vehicle.latitude = payload.latitude
-    vehicle.longitude = payload.longitude
-
-    await db.flush()
-    await db.refresh(t)
-
-    # Cache latest position in Redis for WebSocket broadcast
-    await cache_set(
-        f"vehicle:live:{payload.vehicle_id}",
-        {"lat": payload.latitude, "lng": payload.longitude, "speed": payload.speed_kmph},
-        ttl=120,
-    )
-
-    return t
+@router.websocket("/ws")
+async def telemetry_websocket(websocket: WebSocket):
+    from app.core.websocket import manager
+    await manager.connect(websocket)
+    try:
+        while True:
+            # Keep connection alive
+            await websocket.receive_text()
+    except Exception:
+        manager.disconnect(websocket)
 
 
 @router.get("/{vehicle_id}/history", response_model=List[TelemetryResponse])
@@ -86,3 +80,28 @@ async def live_position(
     from app.core.redis import cache_get
     data = await cache_get(f"vehicle:live:{vehicle_id}")
     return data or {"error": "No live data available"}
+
+
+@router.post("/stoppages", status_code=201)
+async def log_stoppage(
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    token: TokenData = Depends(get_current_user),
+):
+    """
+    Log a driver-reported stoppage.
+    Payload: { vehicle_id, lat, lng, reason }
+    """
+    if token.role != "driver":
+        raise HTTPException(status_code=403, detail="Only drivers can report stoppages")
+
+    stoppage = VehicleStoppage(
+        vehicle_id=uuid.UUID(payload["vehicle_id"]),
+        latitude=payload["lat"],
+        longitude=payload["lng"],
+        reason=payload.get("reason", "unknown"),
+        start_time=datetime.now()
+    )
+    db.add(stoppage)
+    await db.commit()
+    return {"status": "stoppage_logged", "id": stoppage.id}
