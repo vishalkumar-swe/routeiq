@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ${{ github.repository | lower }}  # ← Convert to lowercase
+  IMAGE_PREFIX: ${{ github.repository | downcase }}
 
 jobs:
   # ─────────────────────────────────────────────
