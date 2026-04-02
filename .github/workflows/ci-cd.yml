@@ -8,8 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ${{ github.repository_owner | downcase }}/${{ github.event.repository.name | downcase }} 
-
+  IMAGE_PREFIX: ${{ github.repository | downcase }}
 jobs:
   # ─────────────────────────────────────────────
   # Backend Tests
