@@ -9,8 +9,11 @@ import AnalyticsPage from '@/pages/AnalyticsPage'
 import OptimizePage from '@/pages/OptimizePage'
 import SuperadminPage from '@/pages/SuperadminPage'
 import AIHubPage from '@/pages/AIHubPage'
+import CargoNetworkPage from '@/pages/CargoNetworkPage'
 import ShipmentsPage from '@/pages/ShipmentsPage'
 import DriverPage from '@/pages/DriverPage'
+import CustomerTrackingPage from '@/pages/CustomerTrackingPage'
+import LiveBiddingPage from '@/pages/LiveBiddingPage'
 
 function PrivateRoute({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) {
   const token = useAuthStore(s => s.token)
@@ -19,6 +22,7 @@ function PrivateRoute({ children, allowedRoles }: { children: React.ReactNode, a
   if (!token) return <Navigate to="/login" replace />
   
   if (allowedRoles && role && !allowedRoles.includes(role)) {
+    if (role === 'driver') return <Navigate to="/driver" replace />
     return <Navigate to="/dashboard" replace />
   }
   
@@ -30,8 +34,10 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/track" element={<CustomerTrackingPage />} />
+        <Route path="/track/:trackingId" element={<CustomerTrackingPage />} />
         <Route path="/driver" element={
-          <PrivateRoute allowedRoles={['superadmin', 'admin', 'manager', 'driver']}>
+          <PrivateRoute allowedRoles={['superadmin', 'admin', 'driver']}>
             <DriverPage />
           </PrivateRoute>
         } />
@@ -41,25 +47,33 @@ export default function App() {
           </PrivateRoute>
         }>
           <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="dashboard" element={
+            <PrivateRoute allowedRoles={['superadmin', 'admin']}>
+              <DashboardPage />
+            </PrivateRoute>
+          } />
           <Route path="shipments" element={
-            <PrivateRoute allowedRoles={['superadmin', 'admin', 'manager']}>
+            <PrivateRoute allowedRoles={['superadmin', 'admin']}>
               <ShipmentsPage />
             </PrivateRoute>
           } />
           <Route path="fleet" element={
-            <PrivateRoute allowedRoles={['superadmin', 'admin', 'manager']}>
+            <PrivateRoute allowedRoles={['superadmin', 'admin']}>
               <FleetPage />
             </PrivateRoute>
           } />
-          <Route path="routes" element={<RoutesPage />} />
+          <Route path="routes" element={
+            <PrivateRoute allowedRoles={['superadmin', 'admin']}>
+              <RoutesPage />
+            </PrivateRoute>
+          } />
           <Route path="optimize" element={
-            <PrivateRoute allowedRoles={['superadmin', 'admin', 'manager']}>
+            <PrivateRoute allowedRoles={['superadmin', 'admin']}>
               <OptimizePage />
             </PrivateRoute>
           } />
           <Route path="analytics" element={
-            <PrivateRoute allowedRoles={['superadmin', 'admin', 'manager']}>
+            <PrivateRoute allowedRoles={['superadmin', 'admin']}>
               <AnalyticsPage />
             </PrivateRoute>
           } />
@@ -71,6 +85,16 @@ export default function App() {
           <Route path="ai-hub" element={
             <PrivateRoute allowedRoles={['superadmin', 'admin']}>
               <AIHubPage />
+            </PrivateRoute>
+          } />
+          <Route path="cargo-network" element={
+            <PrivateRoute allowedRoles={['superadmin', 'admin']}>
+              <CargoNetworkPage />
+            </PrivateRoute>
+          } />
+          <Route path="bidding" element={
+            <PrivateRoute allowedRoles={['superadmin', 'admin']}>
+              <LiveBiddingPage />
             </PrivateRoute>
           } />
         </Route>

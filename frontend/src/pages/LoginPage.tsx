@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { GoogleLogin } from '@react-oauth/google'
 import { Zap, Eye, EyeOff, ShieldCheck, UserCog, User, Truck } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { authAPI } from '@/services/api'
@@ -14,6 +15,20 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const setAuth = useAuthStore(s => s.setAuth)
   const navigate = useNavigate()
+
+  const handleGoogleSuccess = async (response: any) => {
+    setLoading(true)
+    try {
+      const data = await authAPI.googleLogin(response.credential)
+      setAuth(data.access_token, data.refresh_token, data.role, data.user_id)
+      toast.success(`Welcome to ROUTEIQ!`)
+      navigate(data.role === 'superadmin' ? '/superadmin' : '/dashboard')
+    } catch (e) {
+      console.error('Google login failed', e)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleLogin = async (e?: React.FormEvent, customEmail?: string, customPass?: string) => {
     e?.preventDefault()
@@ -39,43 +54,57 @@ export default function LoginPage() {
   }
 
   const QUICK_LOGINS = [
-    { role: 'superadmin', icon: ShieldCheck, email: 'superadmin@routeiq.io', pass: 'SuperAdmin1234!', color: 'text-yellow-400' },
     { role: 'admin', icon: UserCog, email: 'admin@routeiq.io', pass: 'Admin1234!', color: 'text-white' },
-    { role: 'manager', icon: User, email: 'manager@routeiq.io', pass: 'Manager1234!', color: 'text-slate-400' },
-    { role: 'driver', icon: Truck, email: 'driver@routeiq.io', pass: 'Driver1234!', color: 'text-yellow-600' },
   ]
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-6 relative overflow-hidden">
       {/* Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-yellow-400/20 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/20 blur-[120px] rounded-full pointer-events-none" />
 
-      <div className="w-full max-w-[420px] space-y-10 relative z-10 animate-fade-in">
+      <div className="w-full max-w-[420px] space-y-8 relative z-10 animate-fade-in">
         {/* Branding */}
         <div className="text-center space-y-3">
-          <div className="inline-flex w-20 h-20 bg-yellow-400 rounded-3xl items-center justify-center shadow-[0_8px_32px_rgba(249,201,53,0.3)] rotate-3 hover:rotate-0 transition-transform duration-500">
-            <Zap size={44} className="text-slate-900 fill-current" strokeWidth={2.5} />
+          <div className="inline-flex w-20 h-20 bg-primary rounded-3xl items-center justify-center shadow-[0_8px_32px_rgba(79,172,254,0.3)] rotate-3 hover:rotate-0 transition-transform duration-500">
+            <Zap size={44} className="text-bg fill-current" strokeWidth={2.5} />
           </div>
-          <h1 className="font-display text-6xl font-black text-slate-900 tracking-tighter uppercase leading-none pt-4">
-            Route<span className="text-yellow-500">IQ</span>
+          <h1 className="font-display text-5xl font-black text-white tracking-tighter uppercase leading-none pt-4">
+            ROUTE<span className="text-primary">IQ</span>
           </h1>
-          <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[10px]">
-            Hyper-Efficient Fleet Core
+          <p className="text-slate-500 font-bold uppercase tracking-[0.12em] text-[9px]">
+            powered by PRUDATA TECHNOLOGIES
           </p>
         </div>
 
         {/* Login Card */}
-        <Card className="p-8 border-slate-200 bg-white shadow-xl backdrop-blur-xl">
+        <Card className="p-8 border-white/5 bg-surface/50 shadow-2xl backdrop-blur-3xl">
+          <div className="mb-8">
+             <div className="flex justify-center mb-6">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => toast.error('Google Authentication Failed')}
+                  useOneTap
+                  theme="filled_blue"
+                  shape="pill"
+                  width="100%"
+                />
+             </div>
+             <div className="flex items-center gap-4 px-4">
+               <div className="h-px flex-1 bg-white/5" />
+               <span className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] whitespace-nowrap">Or Internal Protocol</span>
+               <div className="h-px flex-1 bg-white/5" />
+             </div>
+          </div>
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Command Control ID</label>
               <input
                 type="email"
-                placeholder="email@routeiq.io"
+                placeholder="nexus.auth@prudata.io"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-slate-900 text-sm focus:outline-none focus:border-yellow-400/50 transition-all font-bold placeholder:text-slate-400 shadow-sm"
+                className="w-full bg-surface2 border border-white/5 rounded-2xl px-5 py-4 text-white text-sm focus:outline-none focus:border-primary/50 transition-all font-bold placeholder:text-slate-600 shadow-sm"
               />
             </div>
 
@@ -88,12 +117,12 @@ export default function LoginPage() {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   required
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-slate-900 text-sm focus:outline-none focus:border-yellow-400/50 transition-all font-bold placeholder:text-slate-400 shadow-sm"
+                  className="w-full bg-surface2 border border-white/5 rounded-2xl px-5 py-4 text-white text-sm focus:outline-none focus:border-primary/50 transition-all font-bold placeholder:text-slate-600 shadow-sm"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPass(!showPass)}
-                  className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
                 >
                   {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -102,7 +131,7 @@ export default function LoginPage() {
 
             <Button
               variant="accent"
-              className="w-full py-7 rounded-2xl text-base shadow-[0_20px_40px_rgba(249,201,53,0.15)] group"
+              className="w-full py-7 rounded-2xl text-base shadow-[0_20px_40px_rgba(79,172,254,0.15)] group"
               type="submit"
               disabled={loading}
             >
@@ -110,7 +139,7 @@ export default function LoginPage() {
                 <Spinner size={20} />
               ) : (
                 <span className="flex items-center gap-2">
-                  ACTIVATE SYSTEM <Zap size={16} className="fill-current" />
+                  AUTHORIZE SESSION <Zap size={16} className="fill-current" />
                 </span>
               )}
             </Button>
@@ -125,13 +154,13 @@ export default function LoginPage() {
             <div className="h-px flex-1 bg-slate-200" />
           </div>
           
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex justify-center">
             {QUICK_LOGINS.map(({ role, icon: Icon, email: e, pass: p }) => (
               <button
                 key={role}
                 onClick={() => handleLogin(undefined, e, p)}
                 disabled={loading}
-                className="group p-4 bg-slate-50 border border-slate-200 rounded-2xl hover:bg-slate-100 hover:border-yellow-400/50 transition-all text-left relative overflow-hidden shadow-sm"
+                className="group w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl hover:bg-slate-100 hover:border-yellow-400/50 transition-all text-left relative overflow-hidden shadow-sm"
               >
                 <Icon size={20} className={clsx("mb-2 group-hover:scale-110 transition-transform text-slate-900")} />
                 <div className="font-display font-black text-xs text-slate-900 uppercase tracking-tighter">{role}</div>

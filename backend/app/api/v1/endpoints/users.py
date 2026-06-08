@@ -4,10 +4,10 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.database import get_db
-from app.core.security import get_current_user, require_role
-from app.models.models import User
-from app.schemas.schemas import TokenData, UserResponse, UserUpdate
+from ....core.database import get_db
+from ....core.security import get_current_user, require_role
+from ....models.models import User
+from ....schemas.schemas import TokenData, UserResponse, UserUpdate
 
 router = APIRouter()
 

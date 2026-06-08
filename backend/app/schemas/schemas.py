@@ -112,7 +112,7 @@ class DeliveryPointResponse(BaseModel):
 
 
 class OptimizationRequest(BaseModel):
-    depot_id: uuid.UUID
+    depot_id: Optional[uuid.UUID] = None
     vehicle_ids: List[uuid.UUID] = Field(min_length=0, max_length=100, default_factory=list)
     delivery_point_ids: List[uuid.UUID] = Field(min_length=0, max_length=500, default_factory=list)
     algorithm: str = Field(default="ortools", pattern="^(ortools|genetic|reinforcement)$")

@@ -19,7 +19,7 @@ function SignaturePad({ onSave }: { onSave: (data: string) => void }) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    ctx.strokeStyle = '#EAB308';
+    ctx.strokeStyle = 'var(--primary)';
     ctx.lineWidth = 4;
     ctx.lineCap = 'round';
   }, []);
@@ -106,28 +106,37 @@ export default function DriverPage() {
     if (currentStop && !activeStopId) setActiveStopId(currentStop.id);
   }, [activeRoute, currentStop]);
 
-  // 2. High-Frequency Telemetry (Rapido Style)
+  // 2. Real Mobile GPS Telemetry
   useEffect(() => {
     if (shiftStatus === 'OFFLINE' || !activeRoute) return;
 
-    const transmit = () => {
-      // Lat/Lng base set to Delhi for demonstration
-      const lat = 28.5244 + (Math.random() - 0.5) * 0.05;
-      const lng = 77.2167 + (Math.random() - 0.5) * 0.05;
+    let watchId: number;
 
-      telemetryAPI.ingest({
-        vehicle_id: activeRoute.vehicle_id,
-        latitude: lat,
-        longitude: lng,
-        speed_kmph: shiftStatus === 'ON_MISSION' ? Math.random() * 50 + 10 : 0,
-        fuel_level_pct: 82,
-        heading: Math.random() * 360
-      }).catch(console.error);
+    if ('geolocation' in navigator) {
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          telemetryAPI.ingest({
+            vehicle_id: activeRoute.vehicle_id,
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            speed_kmph: position.coords.speed ? (position.coords.speed * 3.6) : (shiftStatus === 'ON_MISSION' ? 40 : 0),
+            fuel_level_pct: 82,
+            heading: position.coords.heading || 0
+          }).catch(console.error);
+        },
+        (error) => {
+          console.error('GPS Error:', error);
+          toast.error('GPS Signal Lost. Please check permissions.');
+        },
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+      );
+    } else {
+      toast.error('Geolocation is not supported by this browser.');
+    }
+
+    return () => {
+      if (watchId) navigator.geolocation.clearWatch(watchId);
     };
-
-    transmit(); // Immediate
-    const interval = setInterval(transmit, 5000); // 5s high-frequency
-    return () => clearInterval(interval);
   }, [shiftStatus, activeRoute]);
 
   const updateStatus = useMutation({
@@ -184,18 +193,18 @@ export default function DriverPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 transition-all ${
-              shiftStatus === 'OFFLINE' ? 'border-red-500/20 bg-red-500/5 text-red-500' : 
-              shiftStatus === 'ON_DUTY' ? 'border-yellow-500 bg-yellow-500 text-black' : 
-              'border-emerald-500 bg-emerald-500/20 text-emerald-500 animate-pulse'
+              shiftStatus === 'OFFLINE' ? 'border-error/20 bg-error/5 text-error' : 
+              shiftStatus === 'ON_DUTY' ? 'border-primary bg-primary text-bg' : 
+              'border-success bg-success/20 text-success animate-pulse'
             }`}>
               <Truck size={24} />
             </div>
             <div>
-              <h1 className="text-xl font-black tracking-tighter uppercase italic leading-none">
-                IQ<span className="text-yellow-500">Fleet</span> <span className="text-[10px] not-italic font-bold text-slate-500 ml-1">CARGO</span>
+              <h1 className="text-xl font-black tracking-tighter uppercase leading-none">
+                Nexus<span className="text-primary">Drive</span> <span className="text-[10px] font-bold text-slate-500 ml-1">v3.2</span>
               </h1>
               <div className="flex items-center gap-2 mt-1.5">
-                <div className={`w-1.5 h-1.5 rounded-full ${shiftStatus === 'OFFLINE' ? 'bg-slate-600' : 'bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]'}`} />
+                <div className={`w-1.5 h-1.5 rounded-full ${shiftStatus === 'OFFLINE' ? 'bg-slate-600' : 'bg-success animate-pulse shadow-[0_0_8px_var(--success)]'}`} />
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{shiftStatus} // FREQ: 5s</p>
               </div>
             </div>
@@ -239,16 +248,16 @@ export default function DriverPage() {
                <Truck size={200} />
             </div>
             <div className="relative z-10 text-center">
-              <span className="px-5 py-2 rounded-full bg-yellow-500 text-black text-[10px] font-black uppercase tracking-widest">New Manifest</span>
-              <h2 className="text-4xl font-black mt-6 tracking-tight leading-none uppercase italic">Mission <span className="text-yellow-500">Ready</span></h2>
-              <p className="text-slate-400 font-bold mt-4 uppercase text-xs tracking-widest">{stops.length} Waypoints • {activeRoute.total_distance_km?.toFixed(1)} KM Total</p>
-              
-              <button 
-                onClick={handleStartMission}
-                className="w-full mt-10 h-20 bg-white text-black rounded-[2rem] flex items-center justify-center gap-4 font-black uppercase tracking-[0.2em] text-sm hover:bg-yellow-500 transition-all shadow-2xl hover:scale-[1.02] active:scale-95"
-              >
-                <Play className="fill-current" /> Start Mission
-              </button>
+                    <span className="px-5 py-2 rounded-full bg-primary text-bg text-[10px] font-black uppercase tracking-widest">New Manifest</span>
+                    <h2 className="text-4xl font-black mt-6 tracking-tight leading-none uppercase italic">Mission <span className="text-primary">Ready</span></h2>
+                    <p className="text-slate-400 font-bold mt-4 uppercase text-xs tracking-widest">{stops.length} Waypoints • {activeRoute.total_distance_km?.toFixed(1)} KM Total</p>
+                    
+                    <button 
+                      onClick={handleStartMission}
+                      className="w-full mt-10 h-20 bg-white text-bg rounded-[2rem] flex items-center justify-center gap-4 font-black uppercase tracking-[0.2em] text-sm hover:bg-primary transition-all shadow-2xl hover:scale-[1.02] active:scale-95"
+                    >
+                      <Play className="fill-current text-primary group-hover:text-bg transition-colors" /> Start Mission
+                    </button>
             </div>
           </div>
         ) : (

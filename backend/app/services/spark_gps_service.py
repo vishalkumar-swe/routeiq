@@ -8,7 +8,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.models.models import Vehicle
+from app.models.models import Vehicle, Telemetry, Route, RouteStop
+from sqlalchemy.orm import joinedload, selectinload
+import random
 from app.services.telemetry_service import TelemetryService
 
 logger = logging.getLogger("routeiq.sparkgps")
@@ -38,6 +40,7 @@ class SparkGPSService:
             # 1. Fetch from SparkGPS
             external_data = await SparkGPSService._fetch_from_api()
             if not external_data:
+                logger.info("No external data fetched from SparkGPS API.")
                 return
 
             # 2. Get all RouteIQ vehicles to map by spark_id or plate number
@@ -50,10 +53,13 @@ class SparkGPSService:
 
             # 3. Process and ingest
             synced_count = 0
+            target_plates = {"HR38AC1276", "HR38AC1658"}
+            
             for item in external_data:
                 # Roadcast typically returns 'device_id' or 'imei' for spark_id
                 device_id = item.get("device_id") or item.get("imei")
-                plate = item.get("reg_no", "").replace("-", "").upper()
+                raw_plate = item.get("reg_no", "")
+                plate = raw_plate.replace("-", "").upper()
                 
                 vehicle = None
                 if device_id and device_id in spark_map:
@@ -62,6 +68,9 @@ class SparkGPSService:
                     vehicle = plate_map[plate]
 
                 if vehicle:
+                    if plate in target_plates:
+                        logger.info(f"MATCH: Found hardware data for target vehicle {raw_plate}")
+
                     # Create telemetry record
                     telemetry_data = {
                         "vehicle_id": str(vehicle.id),
@@ -73,14 +82,22 @@ class SparkGPSService:
                         "timestamp": datetime.now(timezone.utc)
                     }
                     
+                    # Determine if this is a high-priority vehicle (Cold Chain or Hazardous)
+                    cargo_types = getattr(vehicle, "cargo_types", []) or []
+                    is_high_priority = any(ct in ["cold_chain", "hazardous"] for ct in cargo_types)
+
                     # Update vehicle state directly for quick UI updates
                     vehicle.latitude = telemetry_data["latitude"]
                     vehicle.longitude = telemetry_data["longitude"]
                     vehicle.last_sync = telemetry_data["timestamp"]
+                    vehicle.status = "on_route" # Ensure status is active when live sync happens
                     
                     # Store in DB and broadcast via WebSockets
                     await TelemetryService.ingest_telemetry(db, telemetry_data)
                     synced_count += 1
+                else:
+                    if plate in target_plates:
+                        logger.warning(f"MISS: Target plate {raw_plate} found in API but no vehicle matched in database.")
 
             if synced_count > 0:
                 logger.info(f"Successfully synced {synced_count} vehicles from SparkGPS.")
@@ -145,21 +162,75 @@ class SparkGPSService:
     async def mock_sync_for_demo(db: AsyncSession):
         """
         Simulates SparkGPS data if no token is available (for local testing).
+        Moves vehicles towards their next pending stop on their active route.
         """
-        result = await db.execute(select(Vehicle).where(Vehicle.status == "on_route"))
-        active_vehicles = result.scalars().all()
+        # Fetch routes with their vehicle and stops
+        result = await db.execute(
+            select(Route)
+            .options(
+                joinedload(Route.vehicle), 
+                selectinload(Route.stops).joinedload(RouteStop.delivery_point)
+            )
+            .where(Route.status == "active")
+        )
+        active_routes = result.scalars().all()
 
-        for vehicle in active_vehicles:
-            # Small jitter around New Delhi (Saket area)
-            lat = 28.5244 + (uuid.uuid4().int % 1000) / 100000
-            lng = 77.2167 + (uuid.uuid4().int % 1000) / 100000
+        if not active_routes:
+            logger.info("No active routes found for mock sync.")
+            return
+
+        for route in active_routes:
+            # 1. Get current location from latest telemetry
+            tele_result = await db.execute(
+                select(Telemetry)
+                .where(Telemetry.vehicle_id == route.vehicle_id)
+                .order_by(Telemetry.timestamp.desc())
+                .limit(1)
+            )
+            latest_tele = tele_result.scalar_one_or_none()
             
+            curr_lat = latest_tele.latitude if latest_tele else (route.vehicle.latitude or 28.6139)
+            curr_lng = latest_tele.longitude if latest_tele else (route.vehicle.longitude or 77.2090)
+            
+            # 2. Find next pending stop
+            next_stop = next((s for s in sorted(route.stops, key=lambda x: x.sequence) if s.status == "pending"), None)
+            
+            if next_stop and next_stop.delivery_point:
+                target_lat = next_stop.delivery_point.latitude
+                target_lng = next_stop.delivery_point.longitude
+                
+                # Move slightly towards target (simulating vehicle movement)
+                # Jitter speed: ~50km/h is roughly 0.0001 degrees per second?
+                # For demo purposes, we move 0.002 degrees (~200m) per sync
+                step_lat = (target_lat - curr_lat) * 0.1
+                step_lng = (target_lng - curr_lng) * 0.1
+                
+                # Cap the step to avoid teleporting
+                limit = 0.005 
+                new_lat = curr_lat + max(-limit, min(limit, step_lat))
+                new_lng = curr_lng + max(-limit, min(limit, step_lng))
+                
+                speed = 45.0 + (uuid.uuid4().int % 25)
+            else:
+                # No next stop, idle or stay at last point
+                new_lat = curr_lat + (random.uniform(-0.0001, 0.0001))
+                new_lng = curr_lng + (random.uniform(-0.0001, 0.0001))
+                speed = 0.0
+
             telemetry_data = {
-                "vehicle_id": str(vehicle.id),
-                "latitude": lat,
-                "longitude": lng,
-                "speed_kmph": 25.0 + (uuid.uuid4().int % 20),
-                "heading": uuid.uuid4().int % 360,
+                "vehicle_id": str(route.vehicle_id),
+                "latitude": new_lat,
+                "longitude": new_lng,
+                "speed_kmph": speed,
+                "heading": random.uniform(0, 360),
                 "timestamp": datetime.now(timezone.utc)
             }
+            
+            # 3. Update vehicle state and ingest telemetry
+            route.vehicle.latitude = new_lat
+            route.vehicle.longitude = new_lng
+            route.vehicle.last_sync = telemetry_data["timestamp"]
+            
             await TelemetryService.ingest_telemetry(db, telemetry_data)
+            
+        logger.info(f"Mock sync complete for {len(active_routes)} active routes.")

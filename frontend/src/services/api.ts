@@ -85,6 +85,8 @@ export const authAPI = {
     api.post('/auth/login', { email, password }).then(r => r.data),
   register: (data: object) =>
     api.post('/auth/register', data).then(r => r.data),
+  googleLogin: (idToken: string) =>
+    api.post('/auth/google', { id_token: idToken }).then(r => r.data),
   logout: () => api.post('/auth/logout'),
 }
 
@@ -111,6 +113,10 @@ export const optimizationAPI = {
   optimize: (data: any) => api.post('/optimize/', data).then(r => r.data),
   predictETA: (data: any) => api.post('/optimize/eta/', data).then(r => r.data),
   incubate: (vehicleId: string) => api.post(`/optimize/incubate/${vehicleId}`).then(r => r.data),
+  runRiskAnalysis: (vehicleId: string) =>
+    api.post(`/agents/risk-analysis/${vehicleId}`).then(r => r.data),
+  runCargoMonitoring: (shipmentId: string) =>
+    api.post(`/agents/cargo-monitoring/${shipmentId}`).then(r => r.data),
 }
 
 export const telemetryAPI = {
@@ -156,6 +162,7 @@ export const analyticsAPI = {
   metrics: () => api.get('/analytics/metrics/').then(r => r.data),
   activeMissions: () => api.get('/analytics/active-missions').then(r => r.data),
   syncSparkGPS: () => api.post('/analytics/sync-sparkgps').then(r => r.data),
+  auditLogs: () => api.get('/analytics/audit-logs').then(r => r.data),
 }
 
 export const usersAPI = {
@@ -166,6 +173,23 @@ export const usersAPI = {
 export const trafficAPI = {
   simulateEvent: (lat: number, lng: number, type: string, severity: number) => 
     api.post('/traffic/event', { lat, lng, event_type: type, severity }).then(r => r.data),
+}
+
+export const cargoAPI = {
+  scenarios: () => api.get('/cargo/scenarios').then(r => r.data),
+  securityAlerts: () => api.get('/cargo/security-alerts').then(r => r.data),
+  triggerAlert: (type: string, plateNumber: string, message: string) =>
+    api.post('/cargo/trigger-alert', { type, plate_number: plateNumber, message }).then(r => r.data),
+  resolveAlert: (alertId: string) =>
+    api.post(`/cargo/resolve-alert/${alertId}`).then(r => r.data),
+  optimizePooling: (demands: any[]) =>
+    api.post('/cargo/optimize-pooling', demands).then(r => r.data),
+  backhaulMatch: (opportunityId: string, availableCapacityKg: number) =>
+    api.post('/cargo/backhaul-match', { opportunity_id: opportunityId, available_capacity_kg: availableCapacityKg }).then(r => r.data),
+  verifyPod: (data: { tracking_id: string, otp: string, latitude: number, longitude: number, photo_uploaded: boolean, recipient_name?: string }) =>
+    api.post('/cargo/verify-pod', data).then(r => r.data),
+  pricingRecommendations: (params: { distance_km: number, weight_kg: number, cargo_type: string, congestion_index: number, weather_severity: number }) =>
+    api.get('/cargo/pricing-recommendations', { params }).then(r => r.data),
 }
 
 

@@ -49,7 +49,8 @@ class FleetHealthMonitor:
 
             for vehicle in stale_vehicles:
                 # Determine if this is a high-priority vehicle (Cold Chain or Hazardous)
-                is_high_priority = any(ct in ["cold_chain", "hazardous"] for ct in (vehicle.cargo_types or []))
+                cargo_types = getattr(vehicle, "cargo_types", []) or []
+                is_high_priority = any(ct in ["cold_chain", "hazardous"] for ct in cargo_types)
                 
                 logger.warning(f"Vehicle {vehicle.plate_number} ({vehicle.id}) timed out. Marking OFFLINE.")
                 vehicle.status = "offline"

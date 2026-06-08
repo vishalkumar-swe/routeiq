@@ -50,40 +50,40 @@ export default function ShipmentsPage() {
 
   return (
     <div className="space-y-8 pb-12">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
         <div>
-          <h1 className="text-5xl font-black text-slate-900 font-display tracking-tighter uppercase leading-[0.8] mb-4">
-            Cargo <span className="text-yellow-500">Manifest</span>
+          <h1 className="text-6xl font-black text-white font-display tracking-tighter uppercase leading-none mb-4">
+            Cargo <span className="text-primary">Manifest</span>
           </h1>
-          <p className="text-slate-500 font-bold text-lg tracking-tight">
-            Managing {shipments.length} active shipments across the global logistics grid.
+          <p className="text-muted font-bold text-lg tracking-tight">
+            Managing <span className="text-white">{shipments.length}</span> active shipments across the global logistics grid.
           </p>
         </div>
-        <Button variant="accent" onClick={() => setIsModalOpen(true)} className="h-14 px-8 rounded-2xl shadow-lg shadow-yellow-500/20 group">
-          <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
+        <Button variant="accent" onClick={() => setIsModalOpen(true)} className="h-16 px-10 rounded-2xl shadow-2xl shadow-primary/20 bg-primary hover:bg-primary-dark text-bg font-black uppercase tracking-widest group">
+          <Plus size={22} className="group-hover:rotate-90 transition-transform duration-300 mr-2" />
           Initialize New Shipment
         </Button>
       </div>
 
-      <div className="bg-white p-2 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col md:flex-row gap-2">
+      <div className="bg-surface p-2 rounded-[2.5rem] border border-border shadow-2xl flex flex-col md:flex-row gap-2">
         <div className="relative flex-1 group">
-          <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-yellow-500 transition-colors" size={20} />
+          <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-primary transition-colors" size={20} />
           <input
             type="text"
             placeholder="Search by Tracking ID or Destination..."
-            className="w-full h-14 pl-16 pr-6 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold placeholder:text-slate-400 focus:ring-2 focus:ring-yellow-500/20 transition-all outline-none"
+            className="w-full h-16 pl-20 pr-8 bg-surface2 border-none rounded-[1.8rem] text-white font-bold placeholder:text-muted focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex overflow-x-auto gap-1 p-1">
+        <div className="flex overflow-x-auto gap-1 p-1 custom-scrollbar">
           {STATUS_OPTIONS.map((s) => (
             <button
               key={s}
               onClick={() => setFilter(s)}
               className={clsx(
-                "px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                filter === s ? "bg-slate-900 text-yellow-400 shadow-md" : "text-slate-500 hover:bg-slate-100"
+                "px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                filter === s ? "bg-primary text-bg shadow-lg shadow-primary/20" : "text-muted hover:bg-surface2"
               )}
             >
               {s.replace('_', ' ')}
@@ -106,79 +106,79 @@ export default function ShipmentsPage() {
           </div>
         ) : (
           filtered.map((s: any) => (
-            <Card key={s.id} className="relative group transition-all hover:scale-[1.01] hover:shadow-2xl border-none p-0 overflow-visible mb-8 bg-white shadow-xl rounded-[2rem]">
+            <Card key={s.id} className="relative group transition-all hover:scale-[1.01] hover:shadow-2xl border border-border p-0 overflow-visible mb-8 bg-surface shadow-2xl rounded-[2.5rem]">
                <div className="grid grid-cols-1 lg:grid-cols-4 items-center">
                   
                   {/* Column 1: Tracking Vector */}
-                  <div className="p-8 border-r border-slate-100 h-full flex flex-col justify-center">
-                     <div className="flex items-center gap-2 mb-4">
-                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tracking ID</div>
-                        <Badge variant="green" className="bg-emerald-500/10 text-emerald-500 border-none rounded-full px-3 py-0.5 whitespace-nowrap">
-                           <ShieldCheck size={10} className="inline mr-1 mb-0.5" /> Verified
+                  <div className="p-10 border-r border-border h-full flex flex-col justify-center">
+                     <div className="flex items-center gap-3 mb-6">
+                        <div className="text-[10px] font-black text-muted uppercase tracking-[0.2em]">Tracking ID</div>
+                        <Badge variant="green" className="bg-success/10 text-success border-none rounded-full px-3 py-1 text-[8px] font-black uppercase tracking-widest whitespace-nowrap">
+                           <ShieldCheck size={10} className="inline mr-1 mb-0.5" /> SECURE
                         </Badge>
                      </div>
-                     <h3 className="text-2xl font-black text-yellow-600 font-mono tracking-tight leading-none mb-4">{s.tracking_id}</h3>
-                     <div className="bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest inline-block w-fit">
+                     <h3 className="text-3xl font-black text-primary font-mono tracking-tight leading-none mb-6">{s.tracking_id}</h3>
+                     <div className="bg-surface2 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest inline-block w-fit border border-border">
                         {s.priority} priority
                      </div>
                   </div>
 
                   {/* Column 2: Journey Logistics */}
-                  <div className="col-span-1 lg:col-span-1 p-8 border-r border-slate-100 flex flex-col gap-6">
-                     <div className="space-y-1">
-                        <div className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
-                           <div className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Departure
+                  <div className="col-span-1 lg:col-span-1 p-10 border-r border-border flex flex-col gap-8">
+                     <div className="space-y-2">
+                        <div className="text-[8px] font-black text-muted uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
+                           <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(79,172,254,0.6)]" /> Departure
                         </div>
-                        <div className="text-base font-black text-slate-900 leading-tight">{s.origin_name || 'Fleet Hub Alpha'}</div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase truncate max-w-[200px]">{s.origin_address || 'Sector V, Salt Lake City, Kolkata'}</div>
+                        <div className="text-lg font-black text-white leading-tight">{s.origin_name || 'Fleet Hub Alpha'}</div>
+                        <div className="text-[10px] font-bold text-muted uppercase truncate max-w-[200px] tracking-tight">{s.origin_address || 'Sector V, Salt Lake City, Kolkata'}</div>
                      </div>
-                     <div className="space-y-1">
-                        <div className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
-                           <div className="w-1.5 h-1.5 rounded-full bg-yellow-500" /> Destination
+                     <div className="space-y-2">
+                        <div className="text-[8px] font-black text-muted uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
+                           <div className="w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_rgba(249,201,53,0.6)]" /> Destination
                         </div>
-                        <div className="text-base font-black text-slate-900 leading-tight">{s.delivery_point?.name || 'Local Distribution'}</div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase truncate max-w-[200px]">{s.delivery_point?.address || 'Street 104, New Delhi'}</div>
+                        <div className="text-lg font-black text-white leading-tight">{s.delivery_point?.name || 'Local Distribution'}</div>
+                        <div className="text-[10px] font-bold text-muted uppercase truncate max-w-[200px] tracking-tight">{s.delivery_point?.address || 'Street 104, New Delhi'}</div>
                      </div>
                   </div>
 
                   {/* Column 3: Cargo Payload */}
-                  <div className="p-8 border-r border-slate-100 h-full flex flex-col justify-center">
-                     <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Cargo Payload</div>
-                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center border border-slate-100">
-                           <Layers className="text-slate-400" size={20} />
+                  <div className="p-10 border-r border-border h-full flex flex-col justify-center">
+                     <div className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-6">Cargo Payload</div>
+                     <div className="flex items-center gap-5">
+                        <div className="w-16 h-16 rounded-2xl bg-surface2 flex items-center justify-center border border-border group-hover:bg-bg transition-colors shadow-lg">
+                           <Layers className="text-primary" size={24} />
                         </div>
                         <div>
-                           <div className="text-xl font-black text-slate-900 leading-none mb-1">{s.total_items} Items</div>
-                           <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Total: {s.total_weight_kg} KG</div>
+                           <div className="text-2xl font-black text-white leading-none mb-2">{s.total_items} Items</div>
+                           <div className="text-[10px] font-bold text-muted uppercase tracking-widest">Total: {s.total_weight_kg} KG</div>
                         </div>
                      </div>
-                     <button className="mt-6 flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 hover:text-yellow-600 transition-colors">
-                        <Navigation size={12} className="text-yellow-500" /> View On Map
+                     <button className="mt-8 flex items-center gap-2 text-[10px] font-black uppercase text-primary hover:text-white transition-colors tracking-widest">
+                        <Navigation size={14} className="text-primary" /> View Intelligence Grid
                      </button>
                   </div>
 
                   {/* Column 4: Status Intelligence */}
-                  <div className="p-8 h-full flex flex-col justify-center">
-                     <div className="flex items-center justify-between mb-8">
-                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</div>
-                        <div className="flex items-center gap-2">
-                           <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
-                           <span className="text-[10px] font-black text-slate-900 uppercase tracking-tighter">{s.status.replace('_', ' ')}</span>
+                  <div className="p-10 h-full flex flex-col justify-center bg-surface2/30">
+                     <div className="flex items-center justify-between mb-10">
+                        <div className="text-[10px] font-black text-muted uppercase tracking-[0.2em]">Status</div>
+                        <div className="flex items-center gap-3">
+                           <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shadow-[0_0_10px_rgba(79,172,254,0.8)]" />
+                           <span className="text-xs font-black text-white uppercase tracking-tighter">{s.status.replace('_', ' ')}</span>
                         </div>
                      </div>
                      
-                     <div className="grid grid-cols-3 gap-2">
+                     <div className="grid grid-cols-1 gap-2">
                         {['picked_up', 'in_transit', 'delivered'].map(st => (
                           <button
                             key={st}
                             onClick={() => statusMutation.mutate({ id: s.id, status: st })}
                             disabled={s.status === st || statusMutation.isPending}
                             className={clsx(
-                              "h-10 rounded-xl text-[8px] font-black uppercase tracking-tighter transition-all",
+                              "h-12 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border",
                               s.status === st 
-                                ? "bg-yellow-500 text-slate-900 shadow-lg shadow-yellow-500/20" 
-                                : "bg-yellow-50/50 text-yellow-600/60 hover:bg-yellow-50"
+                                ? "bg-primary text-bg border-primary shadow-lg shadow-primary/20" 
+                                : "bg-surface/50 text-muted border-border hover:border-primary/40 hover:text-white"
                             )}
                           >
                             {st.replace('_', ' ')}
@@ -187,15 +187,6 @@ export default function ShipmentsPage() {
                      </div>
                   </div>
 
-               </div>
-
-               {/* Absolute Badges */}
-               <div className="absolute -top-3 -left-3">
-                  {s.is_verified && (
-                    <div className="w-6 h-6 rounded-lg bg-emerald-500 flex items-center justify-center text-white shadow-lg border-2 border-white">
-                       <ShieldCheck size={14} />
-                    </div>
-                  )}
                </div>
             </Card>
           ))

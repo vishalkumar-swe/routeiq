@@ -43,13 +43,21 @@ async def optimize_routes(
     # -----------------------------
     # Load depot
     # -----------------------------
+    depot = None
     if payload.depot_id and str(payload.depot_id) != '00000000-0000-0000-0000-000000000001':
         depot_result = await db.execute(select(Depot).where(Depot.id == payload.depot_id))
         depot = depot_result.scalar_one_or_none()
+        
+        # If not a Depot, maybe it's a DeliveryPoint acting as origin/depot?
         if not depot:
-            raise HTTPException(status_code=404, detail=f"Depot {payload.depot_id} not found")
-    else:
-        # Fallback to first depot for demo purposes
+            dp_result = await db.execute(select(DeliveryPoint).where(DeliveryPoint.id == payload.depot_id))
+            dp_depot = dp_result.scalar_one_or_none()
+            if dp_depot:
+                # Mock a depot from the delivery point
+                depot = Depot(id=dp_depot.id, name=dp_depot.name, latitude=dp_depot.latitude, longitude=dp_depot.longitude)
+                
+    if not depot:
+        # Fallback to first depot if not found or not provided
         depot_result = await db.execute(select(Depot).limit(1))
         depot = depot_result.scalar_one_or_none()
         if not depot:

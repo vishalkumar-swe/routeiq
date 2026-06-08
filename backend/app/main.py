@@ -1,16 +1,19 @@
 """
-RouteIQ - Fleet Intelligence Platform
+ROUTEIQ powered by PRUDATA TECHNOLOGIES - Fleet Intelligence Platform
 FastAPI Application Entry Point
 """
 from contextlib import asynccontextmanager
 import asyncio
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+import os
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from prometheus_client import make_asgi_app
 
-from app.api.v1.router import api_router
+from .api.v1.router import api_router
 from app.core.config import settings
 from app.core.database import engine, Base
 
@@ -51,7 +54,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     openapi_url="/api/v1/openapi.json",
-    lifespan=lifespan
+    lifespan=lifespan,
+    redirect_slashes=True,  # Allow trailing slash handling
 )
 
 # Middleware (order matters — outermost first)
@@ -72,6 +76,10 @@ app.mount("/metrics", metrics_app)
 
 # Add Unified API Router
 app.include_router(api_router, prefix="/api/v1")
+
+# Serve SPA built files (fallback for client-side routing)
+frontend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../frontend/dist"))
+app.mount("/", StaticFiles(directory=frontend_path, html=True))
 
 
 @app.get("/health", tags=["Health"])

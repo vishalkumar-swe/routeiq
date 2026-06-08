@@ -6,6 +6,8 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.schemas.schemas import TokenData
 from app.services.analytics_service import AnalyticsService
+from app.models.models import AIAgentLog
+import uuid
 
 router = APIRouter()
 
@@ -68,3 +70,32 @@ async def sync_sparkgps(
     else:
         await SparkGPSService.mock_sync_for_demo(db)
         return {"status": "success", "message": "SparkGPS Mock Sync (Demostration Mode) complete"}
+
+
+@router.get("/audit-logs", response_model=List[Dict[str, Any]])
+async def get_audit_logs(
+    db: AsyncSession = Depends(get_db),
+    token: TokenData = Depends(get_current_user)
+):
+    """
+    Get system-wide AI and operation audit logs.
+    Only authorized for superadmins.
+    """
+    if token.role != "superadmin":
+        raise HTTPException(status_code=403, detail="Only superadmins can view audit logs")
+        
+    result = await db.execute(select(AIAgentLog).order_by(AIAgentLog.created_at.desc()).limit(100))
+    logs = result.scalars().all()
+    
+    return [
+        {
+            "id": str(log.id),
+            "agent": log.agent_name,
+            "task": log.task_description,
+            "action": log.action_taken,
+            "result": log.result,
+            "status": log.status,
+            "timestamp": log.created_at.isoformat()
+        }
+        for log in logs
+    ]

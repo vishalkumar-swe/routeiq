@@ -316,3 +316,59 @@ class ShipmentLog(Base):
     metadata_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, default=dict)
 
     shipment = relationship("Shipment", back_populates="logs")
+
+
+# ================= BILLING =================
+class Invoice(Base, TimestampMixin):
+    __tablename__ = "invoices"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    shipment_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("shipments.id"))
+    
+    invoice_number: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    amount: Mapped[float] = mapped_column(Float)
+    currency: Mapped[str] = mapped_column(String(3), default="USD")
+    
+    status: Mapped[str] = mapped_column(
+        Enum("unpaid", "paid", "overdue", "cancelled", name="invoice_status"),
+        default="unpaid",
+    )
+    
+    due_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+
+    shipment = relationship("Shipment")
+    payments = relationship("Payment", back_populates="invoice")
+
+
+class Payment(Base, TimestampMixin):
+    __tablename__ = "payments"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    invoice_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("invoices.id"))
+    
+    amount: Mapped[float] = mapped_column(Float)
+    payment_method: Mapped[str] = mapped_column(String(50)) # "Credit Card", "Bank Transfer", "Crypto"
+    transaction_id: Mapped[str] = mapped_column(String(100), unique=True)
+    
+    status: Mapped[str] = mapped_column(
+        Enum("pending", "completed", "failed", "refunded", name="payment_status"),
+        default="pending",
+    )
+
+    invoice = relationship("Invoice", back_populates="payments")
+
+
+# ================= AI AGENTS =================
+class AIAgentLog(Base, TimestampMixin):
+    __tablename__ = "ai_agent_logs"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    agent_name: Mapped[str] = mapped_column(String(100)) # "DispatchAgent", "RiskAgent", etc.
+    task_description: Mapped[str] = mapped_column(Text)
+    action_taken: Mapped[str] = mapped_column(Text)
+    result: Mapped[str] = mapped_column(Text)
+    
+    status: Mapped[str] = mapped_column(String(20), default="success") # "success", "failed", "pending"
+    
+    metadata_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, default=dict)

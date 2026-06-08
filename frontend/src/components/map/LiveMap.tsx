@@ -103,17 +103,10 @@ export default function LiveMap({ vehicles, selectedVehicleId }: { vehicles: Veh
       const initialList: any[] = vehicles.length > 0
         ? vehicles.map((v, i) => ({
             ...v,
-            lat: (v.latitude !== null && v.latitude !== undefined) ? v.latitude : INDIA_POSITIONS[i % INDIA_POSITIONS.length].lat,
-            lng: (v.longitude !== null && v.longitude !== undefined) ? v.longitude : INDIA_POSITIONS[i % INDIA_POSITIONS.length].lng,
+            lat: (v.latitude !== null && v.latitude !== undefined) ? v.latitude : (INDIA_POSITIONS[i % INDIA_POSITIONS.length].lat),
+            lng: (v.longitude !== null && v.longitude !== undefined) ? v.longitude : (INDIA_POSITIONS[i % INDIA_POSITIONS.length].lng),
           }))
-        : INDIA_POSITIONS.slice(0, 10).map((p, i) => ({
-            id: 'demo-' + i,
-            plate_number: ['DL-1001','MH-9001','TN-2345','WB-1234','KA-5678','TS-4321','MH-4567','RJ-8901', 'KL-1234', 'UP-5678'][i],
-            vehicle_type: ['truck','van','truck','bike','truck','van','truck','car', 'truck', 'van'][i],
-            status: ['on_route','available','on_route','idle','on_route','maintenance','on_route','available', 'on_route', 'available'][i],
-            lat: p.lat,
-            lng: p.lng,
-          }))
+        : []
 
       // Initialize positions
       initialList.forEach(v => {

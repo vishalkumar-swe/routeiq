@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import List, Optional, Tuple
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -216,8 +216,13 @@ class DynamicRerouteEngine:
         try:
             target_uid = uuid.UUID(vehicle_id_or_plate)
         except ValueError:
-            # If not a UUID, look up by plate number
-            v_res = await db.execute(select(Vehicle).where(Vehicle.plate_number == vehicle_id_or_plate))
+            # If not a UUID, look up by plate number (robust handling)
+            clean_input = vehicle_id_or_plate.replace("-", "").upper()
+            v_res = await db.execute(
+                select(Vehicle).where(
+                    func.replace(Vehicle.plate_number, '-', '').ilike(clean_input)
+                )
+            )
             vehicle = v_res.scalar_one_or_none()
             if vehicle:
                 target_uid = vehicle.id

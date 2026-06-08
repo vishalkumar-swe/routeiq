@@ -10,7 +10,7 @@ load_dotenv()
 
 class Settings:
     # App
-    APP_NAME: str = os.getenv("APP_NAME", "RouteIQ")
+    APP_NAME: str = os.getenv("APP_NAME", "ROUTEIQ powered by PRUDATA TECHNOLOGIES")
     APP_ENV: str = os.getenv("APP_ENV", "development")
     DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
     SECRET_KEY: str = os.getenv("SECRET_KEY", "temporary_secret_key_for_setup")

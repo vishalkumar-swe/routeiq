@@ -1,7 +1,7 @@
 """API v1 router — aggregates all endpoint routers."""
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, users, vehicles, routes, telemetry, dashboard, optimization, shipments, analytics, traffic, depots
+from .endpoints import auth, users, vehicles, routes, telemetry, dashboard, optimization, shipments, analytics, traffic, depots, cargo
 
 api_router = APIRouter()
 
@@ -16,3 +16,5 @@ api_router.include_router(dashboard.router,    prefix="/dashboard",    tags=["Da
 api_router.include_router(analytics.router,    prefix="/analytics",    tags=["AI Analytics"])
 api_router.include_router(traffic.router,      prefix="/traffic",      tags=["Traffic Simulation"])
 api_router.include_router(depots.router,       prefix="/depots",       tags=["Depots"])
+api_router.include_router(cargo.router,        prefix="/cargo",        tags=["Cargo Collaboration"])
+# # api_router.include_router(agents.router,       prefix="/agents",       tags=["AI Agents"])

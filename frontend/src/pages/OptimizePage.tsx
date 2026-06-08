@@ -36,12 +36,8 @@ export default function OptimizePage() {
   const { mutate: runOptimization, data: result, isPending } = useMutation({
     mutationFn: () => {
       setError(null)
-      if (!depotId) {
-        toast.error('No depot found. Please seed the database first.')
-        return Promise.reject(new Error('No depot found'))
-      }
       return optimizationAPI.optimize({
-        depot_id: depotId,
+        depot_id: depotId || undefined,
         vehicle_ids: vehicles.slice(0, 5).map((v: any) => v.id),
         delivery_point_ids: pendingStops.slice(0, 20).map((dp: any) => dp.id),
         algorithm: algo,
@@ -62,7 +58,7 @@ export default function OptimizePage() {
   })
 
   // Resource validation
-  const canOptimize = vehicles.length > 0 && pendingStops.length > 0 && !!depotId
+  const canOptimize = vehicles.length > 0 && pendingStops.length > 0
 
   return (
     <div>

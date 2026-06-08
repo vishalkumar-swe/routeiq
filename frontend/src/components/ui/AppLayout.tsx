@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { 
   LayoutDashboard, Truck, Map, BarChart3, Zap, 
-  LogOut, Shield, Brain, Package
+  LogOut, Shield, Brain, Package, Network, Gavel
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { authAPI } from '@/services/api'
@@ -16,13 +16,16 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/shipments', icon: Package,         label: 'Shipments', roles: ['admin', 'manager', 'superadmin'] },
-  { to: '/fleet',     icon: Truck,           label: 'Fleet', roles: ['admin', 'manager', 'superadmin'] },
-  { to: '/routes',    icon: Map,             label: 'Routes' },
-  { to: '/optimize',  icon: Zap,             label: 'Optimize', roles: ['admin', 'manager', 'superadmin'] },
-  { to: '/analytics', icon: BarChart3,       label: 'Analytics', roles: ['admin', 'manager', 'superadmin'] },
-  { to: '/ai-hub',    icon: Brain,           label: 'AI Intelligence', roles: ['admin', 'superadmin'] },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Control Tower', roles: ['admin', 'superadmin'] },
+  { to: '/shipments', icon: Package,         label: 'Cargo Manifest', roles: ['admin', 'superadmin'] },
+  { to: '/fleet',     icon: Truck,           label: 'Fleet Assets', roles: ['admin', 'superadmin'] },
+  { to: '/routes',    icon: Map,             label: 'Route Grid', roles: ['admin', 'superadmin'] },
+  { to: '/optimize',  icon: Zap,             label: 'Neural Reroute', roles: ['admin', 'superadmin'] },
+  { to: '/analytics', icon: BarChart3,       label: 'Intel Dashboard', roles: ['admin', 'superadmin'] },
+  { to: '/ai-hub',    icon: Brain,           label: 'Nexus AI Hub', roles: ['admin', 'superadmin'] },
+  { to: '/cargo-network', icon: Network,     label: 'Cargo Network', roles: ['admin', 'superadmin'] },
+  { to: '/bidding',   icon: Gavel,           label: 'Freight Bidding', roles: ['admin', 'superadmin'] },
+  { to: '/track',     icon: Shield,          label: 'Tracking Portal' },
   { to: '/superadmin', icon: Shield,          label: 'Superadmin', roles: ['superadmin'] },
 ]
 
@@ -42,21 +45,27 @@ export default function AppLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <div className="bg-mesh opacity-5" />
-      <div className="bg-grid opacity-10" />
+    <div className="flex min-h-screen bg-bg text-text">
+      <div className="bg-mesh" />
+      <div className="bg-grid opacity-20" />
 
       {/* Sidebar */}
-      <aside className="fixed left-0 top-0 bottom-0 w-[260px] bg-white border-r border-slate-200 flex flex-col py-8 z-[100] shadow-sm">
+      <aside className="fixed left-0 top-0 bottom-0 w-[280px] bg-surface border-r border-border flex flex-col py-8 z-[100] shadow-2xl shadow-black/50">
         {/* Logo */}
         <div className="px-8 mb-12">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-yellow-400 rounded-2xl flex items-center justify-center shadow-[0_4px_16px_rgba(249,201,53,0.3)]">
-              <Zap size={24} className="text-slate-900 fill-current" />
-            </div>
-            <div>
-              <div className="font-display font-black text-2xl text-slate-900 tracking-tighter uppercase leading-none">RouteIQ</div>
-              <div className="text-[10px] font-black text-yellow-600 uppercase tracking-[0.2em] mt-1 ml-0.5">Fleet Core</div>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary-dark rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
+                <div className="text-bg font-display font-black text-2xl">RI</div>
+              </div>
+              <div>
+                <div className="font-display font-black text-xl text-white tracking-tight uppercase leading-tight">
+                  <span className="truncate">ROUTEIQ</span>
+                </div>
+                <div className="font-display font-bold text-[9px] text-primary uppercase tracking-[0.12em]">
+                  powered by PRUDATA TECHNOLOGIES
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -70,19 +79,19 @@ export default function AppLayout() {
               key={to}
               to={to}
               className={({ isActive }) => clsx(
-                'flex items-center gap-4 px-5 py-4 rounded-2xl text-sm transition-all relative group overflow-hidden',
-                isActive ? 'text-slate-900 font-bold bg-slate-100/80 shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
+                'flex items-center gap-4 px-6 py-4 rounded-2xl text-sm transition-all relative group overflow-hidden',
+                isActive ? 'text-white font-bold bg-primary/10 shadow-sm shadow-primary/5' : 'text-muted hover:text-white hover:bg-surface2'
               )}
             >
               {({ isActive }) => (
                 <>
                   {isActive && (
-                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-yellow-400 shadow-[2px_0_8px_rgba(249,201,53,0.4)]" />
+                    <div className="absolute left-0 top-3 bottom-3 w-1 bg-primary rounded-r-full shadow-[2px_0_12px_rgba(79,172,254,0.6)]" />
                   )}
-                  <Icon size={20} className={clsx('transition-all duration-300', isActive ? 'text-yellow-500 scale-110' : 'text-slate-400 group-hover:text-slate-600')} />
+                  <Icon size={20} className={clsx('transition-all duration-300', isActive ? 'text-primary scale-110' : 'text-muted group-hover:text-primary-dark')} />
                   <span className="flex-1 tracking-tight">{label}</span>
                   {badge && (
-                    <span className="bg-yellow-400 text-slate-900 text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                    <span className="bg-primary text-bg text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
                       {badge}
                     </span>
                   )}
@@ -93,9 +102,9 @@ export default function AppLayout() {
         </nav>
 
         {/* User Info & Bottom */}
-        <div className="px-6 mt-auto pt-6 border-t border-slate-200">
+        <div className="px-6 mt-auto pt-6 border-t border-border">
           <button 
-            className="flex items-center gap-4 w-full px-5 py-4 rounded-2xl text-sm font-bold text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-all group"
+            className="flex items-center gap-4 w-full px-6 py-4 rounded-2xl text-sm font-bold text-muted hover:text-error hover:bg-error/10 transition-all group"
             onClick={handleLogout}
           >
             <LogOut size={20} className="group-hover:-translate-x-1 transition-transform" />
@@ -105,8 +114,8 @@ export default function AppLayout() {
       </aside>
 
       {/* Main content */}
-      <main className="ml-[240px] flex-1 p-8 min-h-screen">
-        <div className="max-w-7xl mx-auto animate-fade-up">
+      <main className="ml-[280px] flex-1 p-10 min-h-screen relative z-10">
+        <div className="max-w-7xl mx-auto">
           <Outlet />
         </div>
       </main>
