@@ -61,7 +61,7 @@ export default function LiveBiddingPage() {
           <span className="px-4 py-1.5 rounded-full bg-primary/10 text-primary text-[10px] font-black tracking-[0.2em] uppercase border border-primary/20">
             Live Marketplace
           </span>
-          <h1 className="text-5xl font-black text-white font-heading tracking-tighter uppercase mt-4 mb-4">
+          <h1 className="text-5xl font-black text-text font-heading tracking-tighter uppercase mt-4 mb-4">
             Live Freight <span className="text-primary">Bidding Engine</span>
           </h1>
           <p className="max-w-3xl text-text-muted font-bold text-sm leading-relaxed tracking-tight">
@@ -76,7 +76,7 @@ export default function LiveBiddingPage() {
           <div className="lg:col-span-5 space-y-6">
             <div className="p-8 rounded-[2rem] bg-surface border border-primary/30 shadow-[0_0_30px_rgba(212,154,0,0.1)]">
                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-black uppercase text-white tracking-widest">Active Auction</h3>
+                  <h3 className="text-xl font-black uppercase text-text tracking-widest">Active Auction</h3>
                   <div className="flex items-center gap-2 bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg border border-red-500/20">
                     <Clock size={16} className="animate-pulse" />
                     <span className="font-mono font-bold">{Math.floor(activeAuction.timeRemaining / 60)}:{(activeAuction.timeRemaining % 60).toString().padStart(2, '0')}</span>
@@ -88,7 +88,7 @@ export default function LiveBiddingPage() {
                    <Truck className="text-primary mt-1" />
                    <div>
                      <div className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Cargo Specifications</div>
-                     <div className="text-sm font-bold text-white">{activeAuction.cargo}</div>
+                     <div className="text-sm font-bold text-text">{activeAuction.cargo}</div>
                      <div className="text-xs text-text-muted mt-1">{activeAuction.id}</div>
                    </div>
                  </div>
@@ -97,18 +97,18 @@ export default function LiveBiddingPage() {
                     <div className="relative">
                       <div className="absolute -left-[27px] w-3 h-3 bg-surface border-2 border-primary rounded-full" />
                       <div className="text-[10px] font-black text-text-muted uppercase tracking-widest">Origin</div>
-                      <div className="font-bold text-white">{activeAuction.origin}</div>
+                      <div className="font-bold text-text">{activeAuction.origin}</div>
                     </div>
                     <div className="relative">
                       <div className="absolute -left-[27px] w-3 h-3 bg-primary rounded-full shadow-[0_0_10px_rgba(212,154,0,0.5)]" />
                       <div className="text-[10px] font-black text-text-muted uppercase tracking-widest">Destination</div>
-                      <div className="font-bold text-white">{activeAuction.destination}</div>
+                      <div className="font-bold text-text">{activeAuction.destination}</div>
                     </div>
                  </div>
                  
                  <div className="pt-4 border-t border-border">
                     <div className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Base Starting Price</div>
-                    <div className="text-3xl font-black text-white font-heading">₹{activeAuction.basePrice.toLocaleString()}</div>
+                    <div className="text-3xl font-black text-text font-heading">₹{activeAuction.basePrice.toLocaleString()}</div>
                  </div>
                </div>
             </div>
@@ -119,10 +119,10 @@ export default function LiveBiddingPage() {
              <div className="p-8 rounded-[2rem] bg-surface border border-border h-full flex flex-col">
                 <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h3 className="text-xl font-black uppercase text-white tracking-widest">Live Incoming Bids</h3>
+                    <h3 className="text-xl font-black uppercase text-text tracking-widest">Live Incoming Bids</h3>
                     <p className="text-[10px] text-text-muted uppercase font-bold tracking-widest mt-1">Lowest bid automatically wins if not manually accepted</p>
                   </div>
-                  <span className="px-3 py-1 bg-surface2 text-white text-xs font-bold rounded-lg border border-border">
+                  <span className="px-3 py-1 bg-surface2 text-text text-xs font-bold rounded-lg border border-border">
                     {bids.length} Bids
                   </span>
                 </div>
@@ -144,7 +144,7 @@ export default function LiveBiddingPage() {
                              {bid.driver.split(' ')[2]}
                            </div>
                            <div>
-                             <div className="text-sm font-black text-white">{bid.driver}</div>
+                             <div className="text-sm font-black text-text">{bid.driver}</div>
                              <div className="text-[10px] text-text-muted uppercase tracking-widest mt-0.5">
                                Rating: <span className="text-accent-secondary">{bid.rating}★</span> • {bid.timestamp}
                              </div>
@@ -153,7 +153,7 @@ export default function LiveBiddingPage() {
                          
                          <div className="flex items-center gap-6">
                            <div className="text-right">
-                             <div className="text-xl font-black text-white font-heading">₹{bid.amount.toLocaleString()}</div>
+                             <div className="text-xl font-black text-text font-heading">₹{bid.amount.toLocaleString()}</div>
                              {i === 0 && <div className="text-[10px] font-bold text-success uppercase tracking-widest">Current Lowest</div>}
                            </div>
                            <button 
@@ -173,7 +173,7 @@ export default function LiveBiddingPage() {
       ) : (
         <div className="p-16 text-center bg-surface border border-border rounded-[2.5rem]">
           <CheckCircle2 size={64} className="text-success mx-auto mb-6" />
-          <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-2">Auction Concluded</h2>
+          <h2 className="text-2xl font-black text-text uppercase tracking-widest mb-2">Auction Concluded</h2>
           <p className="text-text-muted font-bold">The winning bid has been assigned to the driver. The cargo is now awaiting pickup.</p>
         </div>
       )}

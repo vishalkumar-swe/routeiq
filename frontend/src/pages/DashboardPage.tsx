@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
+import { LogOut } from 'lucide-react'
+import { useAuthStore } from '@/store/authStore'
+import { useNavigate } from 'react-router-dom'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Truck, Clock, Fuel, TrendingUp, Zap, Filter, Activity } from 'lucide-react'
+import { Truck, Clock, Fuel, TrendingUp, Zap, Filter, Activity, Map } from 'lucide-react'
 import { dashboardAPI, vehiclesAPI, telemetryWS } from '@/services/api'
 import { KPICard, Card, CardHeader, Spinner } from '@/components/ui'
 import toast from 'react-hot-toast'
@@ -12,6 +15,16 @@ import { AIInsightCard } from '@/components/dashboard/AIInsightCard'
 import { STATUS_COLORS, CARGO_EMOJI } from '@/config/mapConfig'
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
+  const clearAuth = useAuthStore(state => state.clearAuth);
+  const token = useAuthStore(state => state.token);
+  const handleLogout = () => {
+    clearAuth();
+    navigate('/login');
+  };
+  useEffect(() => {
+    if (!token) navigate('/login');
+  }, [token, navigate]);
   const [searchParams] = useSearchParams()
   const selectedVehicleId = searchParams.get('vehicle')
   const [filter, setFilter] = useState<'all' | 'moving' | 'idle'>('all')
@@ -74,9 +87,9 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
         <div>
-          <h1 className="font-display text-6xl font-black tracking-tighter text-white uppercase leading-none">
+          <h1 className="font-display text-6xl font-black tracking-tighter text-text uppercase leading-none">
             Nexus <span className="text-primary">Control</span> Tower
           </h1>
           <p className="text-muted font-bold tracking-tight mt-4 flex items-center gap-3 text-sm">
@@ -87,25 +100,55 @@ export default function DashboardPage() {
             {now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} IST
           </p>
         </div>
-        
-        <div className="flex bg-surface2 p-1.5 rounded-2xl border border-border shadow-2xl">
-          {[
-            { id: 'all', label: 'All Fleet' },
-            { id: 'moving', label: 'In Transit' },
-            { id: 'idle', label: 'Parked' },
-          ].map(f => (
-            <button
-              key={f.id}
-              onClick={() => setFilter(f.id as any)}
-              className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                filter === f.id 
-                  ? 'bg-primary text-bg shadow-lg shadow-primary/20' 
-                  : 'text-muted hover:text-white'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
+
+        {/* Top-right: Fleet filter + Logout */}
+        <div className="flex flex-col items-end gap-3">
+          {/* Logout button */}
+          <button
+            onClick={handleLogout}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '8px 18px', borderRadius: '12px',
+              border: '1.5px solid #e5c84a',
+              background: 'transparent',
+              color: '#B38700',
+              fontWeight: 700, fontSize: '13px',
+              cursor: 'pointer',
+              transition: 'background 0.2s, color 0.2s',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.background = '#B38700';
+              (e.currentTarget as HTMLButtonElement).style.color = '#fff';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+              (e.currentTarget as HTMLButtonElement).style.color = '#B38700';
+            }}
+          >
+            <LogOut size={15} />
+            Sign Out
+          </button>
+
+          {/* Fleet filter tabs */}
+          <div className="flex bg-surface2 p-1.5 rounded-2xl border border-border shadow-2xl">
+            {[
+              { id: 'all', label: 'All Fleet' },
+              { id: 'moving', label: 'In Transit' },
+              { id: 'idle', label: 'Parked' },
+            ].map(f => (
+              <button
+                key={f.id}
+                onClick={() => setFilter(f.id as any)}
+                className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                  filter === f.id
+                    ? 'bg-primary text-bg shadow-lg shadow-primary/20'
+                    : 'text-muted hover:text-text'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -123,7 +166,7 @@ export default function DashboardPage() {
           label="Delivery Success"
           value={isLoading ? '—' : `${kpis?.on_time_rate_pct?.toFixed(1) ?? '—'}%`}
           delta={kpis?.delta_efficiency || "+0%"} deltaUp
-          icon={<Clock size={22} className="text-white" />}
+          icon={<Clock size={22} className="text-text" />}
           color="#FFFFFF"
           progress={kpis?.on_time_rate_pct ?? 0}
         />
@@ -149,8 +192,8 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
         <div className="rounded-[40px] bg-surface border border-border flex flex-col overflow-hidden shadow-2xl relative group">
           <div className="absolute top-8 left-8 z-10 pointer-events-none">
-             <div className="bg-bg/40 backdrop-blur-xl border border-white/5 px-8 py-5 rounded-[24px] shadow-2xl">
-                <h2 className="text-xl font-black text-white tracking-tight uppercase">Live <span className="text-primary">Geospatial</span> Grid</h2>
+             <div className="bg-bg/40 backdrop-blur-xl border border-border px-8 py-5 rounded-[24px] shadow-2xl">
+                <h2 className="text-xl font-black text-text tracking-tight uppercase">Live <span className="text-primary">Geospatial</span> Grid</h2>
                 <p className="text-muted text-[10px] font-bold uppercase tracking-[0.2em] mt-2 opacity-60">High-Density Telemetry Pipe Active</p>
              </div>
           </div>
@@ -162,7 +205,7 @@ export default function DashboardPage() {
         <div className="rounded-[40px] bg-surface border border-border flex flex-col overflow-hidden shadow-2xl">
           <div className="px-8 pt-10 pb-6 flex justify-between items-center border-b border-border">
             <div>
-              <h2 className="text-2xl font-black text-white tracking-tighter uppercase">Cargo <span className="text-primary">Fleet</span></h2>
+              <h2 className="text-2xl font-black text-text tracking-tighter uppercase">Cargo <span className="text-primary">Fleet</span></h2>
               <p className="text-muted text-[10px] font-bold uppercase tracking-[0.2em] mt-2">Real-time Telemetry</p>
             </div>
             <div className="px-5 py-2.5 rounded-2xl bg-primary/10 text-primary text-[10px] font-black tracking-widest border border-primary/20">
@@ -193,13 +236,21 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <div className="font-black text-white text-base flex items-center gap-3">
+                        <div className="font-black text-text text-base flex items-center gap-3">
                           {v.plate_number} 
                           <span className={`w-2.5 h-2.5 rounded-full ${speed > 0 ? 'animate-pulse' : ''}`} style={{ backgroundColor: dotColor, boxShadow: `0 0 12px ${dotColor}80` }} />
                         </div>
                         <div className="font-mono font-black text-[13px]" style={{ color: speed > 0 ? 'var(--success)' : 'var(--muted)' }}>
                           {speed > 0 ? `${speed.toFixed(0)} KM/H` : 'STATIONARY'}
                         </div>
+                        <button onClick={() => {
+                          const lat = live?.latitude || v.latitude || 0;
+                          const lng = live?.longitude || v.longitude || 0;
+                          const url = `${import.meta.env.VITE_GOOGLE_MAPS_BASE_URL}/maps/dir/?api=1&destination=${lat},${lng}`;
+                          window.open(url, '_blank');
+                        }} className="ml-2 flex items-center gap-1 text-xs text-primary hover:underline">
+                          <Map size={14} /> Navigate
+                        </button>
                       </div>
                       <div className="flex items-center justify-between mt-2 text-[12px] font-bold">
                         <div className="text-muted truncate pr-4 uppercase tracking-tight">
@@ -232,7 +283,7 @@ export default function DashboardPage() {
               { label: 'Fleet Sync Rate', value: 100, color: '#F59E0B', suffix: '%' },
             ].map(({ label, value, color, suffix }) => (
               <div key={label} className="group">
-                <div className="flex justify-between mb-3 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                <div className="flex justify-between mb-3 text-[10px] font-black uppercase tracking-widest text-muted">
                   <span>{label}</span>
                   <span style={{ color }}>{value}{suffix}</span>
                 </div>

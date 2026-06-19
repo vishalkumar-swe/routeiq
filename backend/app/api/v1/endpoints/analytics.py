@@ -20,7 +20,7 @@ async def get_ai_insights(
     Get real-time AI insights for the fleet.
     Only authorized for managers and admins.
     """
-    if token.role not in ["admin", "superadmin", "manager"]:
+    if token.role not in ["admin", "superadmin", "manager", "driver"]:
         raise HTTPException(status_code=403, detail="Not authorized to view fleet insights")
         
     return await AnalyticsService.get_live_insights(db)
@@ -47,7 +47,7 @@ async def get_active_missions(
     """
     Get all active vehicle missions for the 'Routing Incubator'.
     """
-    if token.role not in ["admin", "superadmin", "manager"]:
+    if token.role not in ["admin", "superadmin", "manager", "driver"]:
         raise HTTPException(status_code=403, detail="Not authorized to view mission incubator")
         
     return await AnalyticsService.get_active_missions(db)

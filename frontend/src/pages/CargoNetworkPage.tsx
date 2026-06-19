@@ -161,7 +161,7 @@ export default function CargoNetworkPage() {
           <span className="px-4 py-1.5 rounded-full bg-primary/10 text-primary text-[10px] font-black tracking-[0.2em] uppercase border border-primary/20">
             Cargo Collaboration Core
           </span>
-          <h1 className="text-5xl font-black text-white font-heading tracking-tighter uppercase mt-4 mb-4">
+          <h1 className="text-5xl font-black text-text font-heading tracking-tighter uppercase mt-4 mb-4">
             AI-Powered Cargo Collaboration <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent-secondary">Network</span>
           </h1>
           <p className="max-w-3xl text-text-muted font-bold text-sm leading-relaxed tracking-tight">
@@ -189,7 +189,7 @@ export default function CargoNetworkPage() {
               onClick={() => setActiveTab(tab.id as any)}
               className={clsx(
                 "flex-1 h-14 rounded-2xl flex items-center justify-center gap-3 text-[11px] font-black tracking-widest transition-all",
-                active ? "bg-primary text-slate-950 font-bold shadow-lg shadow-primary/20" : "text-text-muted hover:text-white hover:bg-surface-opaque"
+                active ? "bg-primary text-slate-950 font-bold shadow-lg shadow-primary/20" : "text-text-muted hover:text-text hover:bg-surface-opaque"
               )}
             >
               <Icon size={16} />
@@ -207,7 +207,7 @@ export default function CargoNetworkPage() {
           <div className="p-6 rounded-[2rem] bg-surface border border-border flex flex-col h-[520px] relative overflow-hidden shadow-2xl">
             <div className="flex items-center justify-between mb-4 z-10">
               <div>
-                <h3 className="text-xs font-black uppercase text-white tracking-widest">Route Optimizer Visualizer</h3>
+                <h3 className="text-xs font-black uppercase text-text tracking-widest">Route Optimizer Visualizer</h3>
                 <p className="text-[10px] text-text-muted font-bold tracking-tight uppercase">Simulated Logistics Corridor Nodes</p>
               </div>
               <div className="flex items-center gap-2">
@@ -215,7 +215,7 @@ export default function CargoNetworkPage() {
                   "px-3 py-1 rounded-full text-[9px] font-mono tracking-widest uppercase text-black font-black",
                   mapSimulation === 'pooling' ? "bg-primary" : 
                   mapSimulation === 'backhaul' ? "bg-accent-secondary" :
-                  mapSimulation === 'deviation' ? "bg-red-500 text-white animate-pulse" :
+                  mapSimulation === 'deviation' ? "bg-red-500 text-text animate-pulse" :
                   "bg-slate-700 text-text-muted"
                 )}>
                   Sim: {mapSimulation.toUpperCase()}
@@ -223,7 +223,7 @@ export default function CargoNetworkPage() {
                 {mapSimulation !== 'idle' && (
                   <button 
                     onClick={() => { setMapSimulation('idle'); setSimulationStep(0); }}
-                    className="p-1 rounded-lg hover:bg-surface-opaque text-text-muted hover:text-white"
+                    className="p-1 rounded-lg hover:bg-surface-opaque text-text-muted hover:text-text"
                     title="Stop Simulation"
                   >
                     <RefreshCw size={12} className="animate-spin-slow" />
@@ -233,7 +233,7 @@ export default function CargoNetworkPage() {
             </div>
 
             {/* Interactive SVG Mapping Area */}
-            <div className="flex-1 w-full bg-slate-950/80 rounded-2xl border border-border relative flex items-center justify-center p-4">
+            <div className="flex-1 w-full bg-surface2/80 rounded-2xl border border-border relative flex items-center justify-center p-4">
               <svg className="w-full h-full min-h-[350px]" viewBox="0 0 300 400">
                 {/* Dotted Connection Grid */}
                 <line x1="30" y1="0" x2="30" y2="400" stroke="rgba(255,255,255,0.03)" strokeWidth="0.5" />
@@ -382,12 +382,12 @@ export default function CargoNetworkPage() {
               </svg>
 
               {/* Live Overlay Panel */}
-              <div className="absolute bottom-4 left-4 right-4 bg-slate-900/90 border border-border p-3 rounded-xl backdrop-blur-md">
+              <div className="absolute bottom-4 left-4 right-4 bg-surface/90 border border-border p-3 rounded-xl backdrop-blur-md">
                 <div className="flex justify-between text-[8px] font-black text-text-muted tracking-widest uppercase">
                   <span>Simulated Corridor telemetry</span>
                   <span className="text-primary animate-pulse">Live link active</span>
                 </div>
-                <div className="mt-1.5 flex justify-between items-center text-xs font-bold text-white">
+                <div className="mt-1.5 flex justify-between items-center text-xs font-bold text-text">
                   <span>Current Vector:</span>
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent-secondary">
                     {mapSimulation === 'pooling' ? "Consolidated Delhi ➔ Udaipur manifest" :
@@ -411,12 +411,12 @@ export default function CargoNetworkPage() {
           <div className="p-6 rounded-[2rem] bg-surface border border-border shadow-2xl">
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h3 className="text-xs font-black uppercase text-white tracking-widest">Cargo Tamper & Security Log</h3>
+                <h3 className="text-xs font-black uppercase text-text tracking-widest">Cargo Tamper & Security Log</h3>
                 <p className="text-[10px] text-text-muted font-bold tracking-tight uppercase">Hardware sensor integrations</p>
               </div>
               <button 
                 onClick={() => refetchAlerts()}
-                className="p-2 bg-surface2 border border-border rounded-xl text-text-muted hover:text-white transition-colors"
+                className="p-2 bg-surface2 border border-border rounded-xl text-text-muted hover:text-text transition-colors"
                 title="Refresh Sensors"
               >
                 <RefreshCw size={12} />
@@ -438,8 +438,8 @@ export default function CargoNetworkPage() {
                     <div className={clsx(
                       "p-1.5 rounded-lg text-slate-950 mt-0.5",
                       alert.status === 'active'
-                        ? (alert.severity === 'critical' ? 'bg-red-500 text-white' : 'bg-yellow-500')
-                        : 'bg-slate-700 text-slate-300'
+                        ? (alert.severity === 'critical' ? 'bg-red-500 text-text' : 'bg-yellow-500')
+                        : 'bg-slate-700 text-muted'
                     )}>
                       {alert.type === 'tamper_detected' ? <LockKeyhole size={12} /> : 
                        alert.type === 'geo_fence_breach' ? <ShieldAlert size={12} /> : 
@@ -447,7 +447,7 @@ export default function CargoNetworkPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-black uppercase text-white tracking-tight">{alert.plate_number}</span>
+                        <span className="text-[10px] font-black uppercase text-text tracking-tight">{alert.plate_number}</span>
                         <span className="text-[8px] font-mono text-text-muted">{new Date(alert.timestamp).toLocaleTimeString()}</span>
                       </div>
                       <p className="text-[11px] text-text-muted mt-1 leading-snug">{alert.message}</p>
@@ -495,7 +495,7 @@ export default function CargoNetworkPage() {
                     <div key={i} className="p-4 rounded-2xl bg-surface border border-border relative overflow-hidden">
                       <div className="text-[9px] font-black text-text-muted uppercase tracking-wider mb-2">{kpi.title}</div>
                       <div className="flex items-baseline justify-between">
-                        <div className="text-xl font-black text-white font-heading">{kpi.value}</div>
+                        <div className="text-xl font-black text-text font-heading">{kpi.value}</div>
                         <span className={clsx(
                           "text-[9px] font-black px-1.5 py-0.5 rounded-md",
                           kpi.trend === 'up' ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"
@@ -504,7 +504,7 @@ export default function CargoNetworkPage() {
                         </span>
                       </div>
                       <div className="absolute right-2 bottom-2 opacity-5">
-                        <Icon size={40} className="text-white" />
+                        <Icon size={40} className="text-text" />
                       </div>
                     </div>
                   )
@@ -515,7 +515,7 @@ export default function CargoNetworkPage() {
               <div className="p-8 rounded-[2.5rem] bg-surface border border-border shadow-2xl">
                 <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h2 className="text-xl font-black text-white uppercase tracking-tight leading-none">Dynamic Matching Engine</h2>
+                    <h2 className="text-xl font-black text-text uppercase tracking-tight leading-none">Dynamic Matching Engine</h2>
                     <p className="text-[10px] text-text-muted font-bold tracking-[0.2em] uppercase mt-2">Active Shipper Demands & Capacity Pairs</p>
                   </div>
                   <span className="px-3 py-1 bg-primary/10 border border-primary/20 text-primary text-[9px] font-mono rounded-full tracking-widest uppercase">
@@ -541,7 +541,7 @@ export default function CargoNetworkPage() {
                           {item.match}%
                         </div>
                         <div>
-                          <div className="text-xs font-black text-white uppercase tracking-tight">{item.shipper}</div>
+                          <div className="text-xs font-black text-text uppercase tracking-tight">{item.shipper}</div>
                           <div className="text-[10px] text-text-muted mt-1 font-mono uppercase">{item.route} · {item.weight} · {item.type}</div>
                         </div>
                       </div>
@@ -556,7 +556,7 @@ export default function CargoNetworkPage() {
                             {item.status}
                           </div>
                         </div>
-                        <button className="px-4 py-2 bg-surface2 hover:bg-surface border border-border text-white text-[10px] font-black uppercase rounded-xl tracking-tight transition-colors">
+                        <button className="px-4 py-2 bg-surface2 hover:bg-surface border border-border text-text text-[10px] font-black uppercase rounded-xl tracking-tight transition-colors">
                           Inspect Match
                         </button>
                       </div>
@@ -569,7 +569,7 @@ export default function CargoNetworkPage() {
               <div className="p-8 rounded-[2.5rem] bg-surface border border-border shadow-2xl">
                 <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h2 className="text-xl font-black text-white uppercase tracking-tight leading-none">Smart Warehouse Coordination</h2>
+                    <h2 className="text-xl font-black text-text uppercase tracking-tight leading-none">Smart Warehouse Coordination</h2>
                     <p className="text-[10px] text-text-muted font-bold tracking-[0.2em] uppercase mt-2">Loading Dock Scheduling & Queue Optimization</p>
                   </div>
                   <span className="text-[9px] text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full font-mono uppercase tracking-widest">
@@ -585,7 +585,7 @@ export default function CargoNetworkPage() {
                   ].map((bay, i) => (
                     <div key={i} className="p-4 rounded-xl bg-surface2/50 border border-border flex flex-col justify-between">
                       <div className="flex justify-between items-center mb-3">
-                        <span className="text-xs font-black text-white uppercase">{bay.dock}</span>
+                        <span className="text-xs font-black text-text uppercase">{bay.dock}</span>
                         <span className={clsx(
                           "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider",
                           bay.status === 'Loading' ? "bg-amber-500/10 text-amber-400" :
@@ -597,7 +597,7 @@ export default function CargoNetworkPage() {
                       </div>
                       
                       <div className="text-[10px] font-mono text-text-muted mb-4">
-                        Truck Plate: <span className="text-white font-bold">{bay.truck}</span>
+                        Truck Plate: <span className="text-text font-bold">{bay.truck}</span>
                       </div>
 
                       {bay.progress > 0 && (
@@ -606,14 +606,14 @@ export default function CargoNetworkPage() {
                             <span>Loading Bar</span>
                             <span>{bay.progress}%</span>
                           </div>
-                          <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden border border-border">
+                          <div className="h-1.5 w-full bg-surface rounded-full overflow-hidden border border-border">
                             <div className="h-full bg-primary" style={{ width: `${bay.progress}%` }} />
                           </div>
                         </div>
                       )}
 
                       <div className="text-[9px] font-mono text-text-muted border-t border-border/40 pt-2 text-right">
-                        Action ETA: <span className="text-white font-bold">{bay.eta}</span>
+                        Action ETA: <span className="text-text font-bold">{bay.eta}</span>
                       </div>
                     </div>
                   ))}
@@ -630,7 +630,7 @@ export default function CargoNetworkPage() {
               <div className="p-8 rounded-[2.5rem] bg-surface border border-border shadow-2xl relative overflow-hidden">
                 <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h2 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-2">
+                    <h2 className="text-2xl font-black text-text uppercase tracking-tight flex items-center gap-2">
                       <Network className="text-primary" /> Cargo Pooling Optimizer
                     </h2>
                     <p className="text-[10px] text-text-muted font-bold tracking-[0.2em] uppercase mt-2">BlaBlaCar for Freight: Consolidate Less-Than-Truckloads (LTL)</p>
@@ -658,7 +658,7 @@ export default function CargoNetworkPage() {
                   {scenarios?.pooling?.demands?.map((dem: any) => (
                     <div key={dem.id} className="p-4 rounded-xl bg-surface2/50 border border-border flex flex-col justify-between">
                       <div>
-                        <div className="text-[10px] font-black text-white uppercase tracking-wider truncate">{dem.company}</div>
+                        <div className="text-[10px] font-black text-text uppercase tracking-wider truncate">{dem.company}</div>
                         <div className="text-[9px] text-text-muted uppercase font-bold tracking-tight mt-1">{dem.origin} ➔ {dem.destination}</div>
                       </div>
                       <div className="mt-4 flex justify-between items-baseline">
@@ -671,9 +671,9 @@ export default function CargoNetworkPage() {
 
                 {/* Pooling Optimization Results Panel */}
                 {poolingResult && (
-                  <div className="p-6 rounded-2xl bg-slate-950/80 border border-border space-y-6">
+                  <div className="p-6 rounded-2xl bg-surface2/80 border border-border space-y-6">
                     <div className="flex justify-between items-center border-b border-border/40 pb-4">
-                      <span className="text-xs font-black uppercase text-white tracking-widest">Neural Solver Metrics</span>
+                      <span className="text-xs font-black uppercase text-text tracking-widest">Neural Solver Metrics</span>
                       <span className="text-[10px] font-black uppercase text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full">
                         Efficiency Gain: {poolingResult.savings_pct}%
                       </span>
@@ -683,7 +683,7 @@ export default function CargoNetworkPage() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="p-3 bg-surface2/30 border border-border rounded-xl">
                         <div className="text-[8px] font-black text-text-muted uppercase">Redundant Miles Saved</div>
-                        <div className="text-lg font-black text-white font-heading mt-1">-{poolingResult.distance_saved_km} km</div>
+                        <div className="text-lg font-black text-text font-heading mt-1">-{poolingResult.distance_saved_km} km</div>
                       </div>
                       <div className="p-3 bg-surface2/30 border border-border rounded-xl">
                         <div className="text-[8px] font-black text-text-muted uppercase">Consolidated Cost</div>
@@ -707,7 +707,7 @@ export default function CargoNetworkPage() {
                           <div key={idx} className="flex-1 p-3 rounded-lg bg-surface flex flex-col justify-between border border-border/60 relative">
                             <div>
                               <div className="text-[9px] font-bold text-text-muted uppercase">{stop.type}</div>
-                              <div className="text-xs font-black text-white uppercase tracking-tight mt-1">{stop.name}</div>
+                              <div className="text-xs font-black text-text uppercase tracking-tight mt-1">{stop.name}</div>
                             </div>
                             <div className="text-[8px] font-mono text-text-muted mt-3">
                               {stop.load_in_kg ? `Load: ${stop.load_in_kg}kg` : `Unload: ${stop.unload_in_kg}kg`}
@@ -727,7 +727,7 @@ export default function CargoNetworkPage() {
                         {poolingResult.shared_pricing.map((price: any, idx: number) => (
                           <div key={idx} className="p-3 rounded-xl bg-surface border border-border/80 flex items-center justify-between">
                             <div>
-                              <div className="text-[8px] font-black text-white uppercase tracking-wider truncate max-w-[120px]">{price.company}</div>
+                              <div className="text-[8px] font-black text-text uppercase tracking-wider truncate max-w-[120px]">{price.company}</div>
                               <div className="text-[10px] font-mono text-text-muted mt-1">
                                 <span className="line-through">₹{price.original_price}</span> ➔ <span className="text-primary font-bold">₹{price.pooling_price}</span>
                               </div>
@@ -745,7 +745,7 @@ export default function CargoNetworkPage() {
               <div className="p-8 rounded-[2.5rem] bg-surface border border-border shadow-2xl relative">
                 <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h2 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-2">
+                    <h2 className="text-2xl font-black text-text uppercase tracking-tight flex items-center gap-2">
                       <Truck className="text-accent-secondary" /> Backhaul matching optimizer
                     </h2>
                     <p className="text-[10px] text-text-muted font-bold tracking-[0.2em] uppercase mt-2">Return-Trip Cargo Space shared-capacity utilization</p>
@@ -787,7 +787,7 @@ export default function CargoNetworkPage() {
                             {isSelected && <div className="w-2 h-2 rounded-full bg-accent-secondary" />}
                           </div>
                           <div>
-                            <div className="text-xs font-black text-white uppercase tracking-tight">{opp.shipper}</div>
+                            <div className="text-xs font-black text-text uppercase tracking-tight">{opp.shipper}</div>
                             <div className="text-[10px] text-text-muted mt-1 font-mono uppercase">
                               {opp.origin} ➔ {opp.destination} · {opp.weight_kg} kg · {opp.cargo_type}
                             </div>
@@ -795,7 +795,7 @@ export default function CargoNetworkPage() {
                         </div>
                         
                         <div className="text-right">
-                          <div className="text-xs font-black text-white">₹{opp.revenue.toLocaleString()}</div>
+                          <div className="text-xs font-black text-text">₹{opp.revenue.toLocaleString()}</div>
                           <div className={clsx(
                             "text-[8px] font-black uppercase mt-1",
                             opp.profitability_score > 90 ? "text-emerald-400" :
@@ -812,11 +812,11 @@ export default function CargoNetworkPage() {
 
                 {/* Backhaul Result Panel */}
                 {backhaulResult && (
-                  <div className="p-6 rounded-2xl bg-slate-950/80 border border-border space-y-4">
+                  <div className="p-6 rounded-2xl bg-surface2/80 border border-border space-y-4">
                     {backhaulResult.status === 'accepted' ? (
                       <>
                         <div className="flex justify-between items-center border-b border-border/40 pb-3">
-                          <span className="text-xs font-black uppercase text-white tracking-widest">Matched Vector Details</span>
+                          <span className="text-xs font-black uppercase text-text tracking-widest">Matched Vector Details</span>
                           <span className="text-[10px] font-black uppercase text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full">
                             Profitability Index: {backhaulResult.profitability_score}%
                           </span>
@@ -825,7 +825,7 @@ export default function CargoNetworkPage() {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           <div className="p-3 bg-surface2/30 border border-border rounded-xl">
                             <div className="text-[8px] font-black text-text-muted uppercase">Gross Revenue</div>
-                            <div className="text-lg font-black text-white font-heading mt-1">₹{backhaulResult.revenue_gained_inr.toLocaleString()}</div>
+                            <div className="text-lg font-black text-text font-heading mt-1">₹{backhaulResult.revenue_gained_inr.toLocaleString()}</div>
                           </div>
                           <div className="p-3 bg-surface2/30 border border-border rounded-xl">
                             <div className="text-[8px] font-black text-text-muted uppercase">Corridor Deviation</div>
@@ -845,7 +845,7 @@ export default function CargoNetworkPage() {
                           <div className="text-[9px] font-black text-text-muted uppercase tracking-widest">Return Waypoints</div>
                           <div className="flex flex-col gap-1.5">
                             {backhaulResult.new_route_waypoints.map((point: string, i: number) => (
-                              <div key={i} className="flex items-center gap-2 text-xs text-white">
+                              <div key={i} className="flex items-center gap-2 text-xs text-text">
                                 <span className="text-[9px] font-mono text-primary font-black bg-primary/10 px-2 py-0.5 rounded border border-primary/20">{i+1}</span>
                                 <span className="font-bold">{point}</span>
                               </div>
@@ -857,7 +857,7 @@ export default function CargoNetworkPage() {
                       <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3">
                         <AlertTriangle className="text-red-500 shrink-0" />
                         <div>
-                          <div className="text-xs font-black text-white uppercase">Match Request Denied</div>
+                          <div className="text-xs font-black text-text uppercase">Match Request Denied</div>
                           <p className="text-[10px] text-text-muted mt-0.5">{backhaulResult.reason}</p>
                         </div>
                       </div>
@@ -876,7 +876,7 @@ export default function CargoNetworkPage() {
               <div className="p-8 rounded-[2.5rem] bg-surface border border-border shadow-2xl">
                 <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h2 className="text-xl font-black text-white uppercase tracking-tight leading-none">AI Dynamic Freight Pricing</h2>
+                    <h2 className="text-xl font-black text-text uppercase tracking-tight leading-none">AI Dynamic Freight Pricing</h2>
                     <p className="text-[10px] text-text-muted font-bold tracking-[0.2em] uppercase mt-2">Real-time quote optimization based on external variables</p>
                   </div>
                   <span className="p-2 bg-primary/10 border border-primary/20 text-primary rounded-xl text-xs font-bold font-mono">
@@ -888,7 +888,7 @@ export default function CargoNetworkPage() {
                   {/* Sliders */}
                   <div className="space-y-4">
                     <div>
-                      <div className="flex justify-between text-xs font-bold text-white mb-2">
+                      <div className="flex justify-between text-xs font-bold text-text mb-2">
                         <span>Corridor Distance</span>
                         <span className="text-primary font-mono">{pricingDistance} km</span>
                       </div>
@@ -900,7 +900,7 @@ export default function CargoNetworkPage() {
                     </div>
 
                     <div>
-                      <div className="flex justify-between text-xs font-bold text-white mb-2">
+                      <div className="flex justify-between text-xs font-bold text-text mb-2">
                         <span>Cargo Load Weight</span>
                         <span className="text-primary font-mono">{(pricingWeight / 1000).toFixed(1)} tons</span>
                       </div>
@@ -917,7 +917,7 @@ export default function CargoNetworkPage() {
                         <select 
                           value={pricingCargoType}
                           onChange={e => setPricingCargoType(e.target.value)}
-                          className="w-full h-11 bg-surface2 border border-border rounded-xl px-3 text-xs font-bold text-white focus:outline-none focus:border-primary"
+                          className="w-full h-11 bg-surface2 border border-border rounded-xl px-3 text-xs font-bold text-text focus:outline-none focus:border-primary"
                         >
                           <option value="general">General Cargo</option>
                           <option value="cold_chain">Cold-Chain (Pharma)</option>
@@ -931,7 +931,7 @@ export default function CargoNetworkPage() {
                         <select 
                           value={pricingCongestion}
                           onChange={e => setPricingCongestion(+e.target.value)}
-                          className="w-full h-11 bg-surface2 border border-border rounded-xl px-3 text-xs font-bold text-white focus:outline-none focus:border-primary"
+                          className="w-full h-11 bg-surface2 border border-border rounded-xl px-3 text-xs font-bold text-text focus:outline-none focus:border-primary"
                         >
                           <option value="0.1">Clear Corridors (10%)</option>
                           <option value="0.4">Moderate Surcharges (40%)</option>
@@ -942,17 +942,17 @@ export default function CargoNetworkPage() {
                   </div>
 
                   {/* Recommendations */}
-                  <div className="p-5 rounded-2xl bg-slate-950/80 border border-border flex flex-col justify-between">
+                  <div className="p-5 rounded-2xl bg-surface2/80 border border-border flex flex-col justify-between">
                     {pricingResult ? (
                       <>
                         <div className="space-y-3">
                           <div className="flex justify-between items-center text-xs text-text-muted">
                             <span>Base Haulage Price</span>
-                            <span className="text-white font-mono">₹{pricingResult.base_charge_inr.toLocaleString()}</span>
+                            <span className="text-text font-mono">₹{pricingResult.base_charge_inr.toLocaleString()}</span>
                           </div>
                           <div className="flex justify-between items-center text-xs text-text-muted">
                             <span>Surcharges (Traffic/Weather)</span>
-                            <span className="text-white font-mono">₹{(pricingResult.congestion_surcharge_inr + pricingResult.weather_surcharge_inr).toLocaleString()}</span>
+                            <span className="text-text font-mono">₹{(pricingResult.congestion_surcharge_inr + pricingResult.weather_surcharge_inr).toLocaleString()}</span>
                           </div>
                           <div className="flex justify-between items-center text-xs text-text-muted border-b border-border/40 pb-2">
                             <span>Pharma/Safety Multiplier</span>
@@ -960,7 +960,7 @@ export default function CargoNetworkPage() {
                           </div>
                           
                           <div className="pt-2 flex justify-between items-baseline">
-                            <span className="text-xs font-black text-white uppercase">AI recommended rate</span>
+                            <span className="text-xs font-black text-text uppercase">AI recommended rate</span>
                             <span className="text-2xl font-black text-primary font-heading">₹{pricingResult.recommended_freight_rate_inr.toLocaleString()}</span>
                           </div>
                         </div>
@@ -969,7 +969,7 @@ export default function CargoNetworkPage() {
                           <TrendingUp className="text-emerald-400 w-8 h-8 shrink-0" />
                           <div>
                             <div className="text-[10px] font-black text-emerald-400 uppercase">Collaborative Pooling discount</div>
-                            <div className="text-xs font-bold text-white font-mono">₹{pricingResult.collaborative_sharing_rate_inr.toLocaleString()} (-₹{pricingResult.estimated_savings_inr.toLocaleString()})</div>
+                            <div className="text-xs font-bold text-text font-mono">₹{pricingResult.collaborative_sharing_rate_inr.toLocaleString()} (-₹{pricingResult.estimated_savings_inr.toLocaleString()})</div>
                           </div>
                         </div>
                       </>
@@ -982,7 +982,7 @@ export default function CargoNetworkPage() {
 
               {/* Geo-fencing, Deviations, and Tamper Control Simulator */}
               <div className="p-8 rounded-[2.5rem] bg-surface border border-border shadow-2xl relative">
-                <h2 className="text-xl font-black text-white uppercase tracking-tight leading-none mb-2">Simulate Hardware Alarms</h2>
+                <h2 className="text-xl font-black text-text uppercase tracking-tight leading-none mb-2">Simulate Hardware Alarms</h2>
                 <p className="text-[10px] text-text-muted font-bold tracking-[0.2em] uppercase mb-6">Operator intervention portal: trigger anomalies to inspect agent response</p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1024,7 +1024,7 @@ export default function CargoNetworkPage() {
               <div className="p-8 rounded-[2.5rem] bg-surface border border-border shadow-2xl relative">
                 <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h2 className="text-xl font-black text-white uppercase tracking-tight leading-none">Digital Proof of Delivery (POD)</h2>
+                    <h2 className="text-xl font-black text-text uppercase tracking-tight leading-none">Digital Proof of Delivery (POD)</h2>
                     <p className="text-[10px] text-text-muted font-bold tracking-[0.2em] uppercase mt-2">Driver Terminal App Viewport</p>
                   </div>
                   <span className="text-[9px] text-primary bg-primary/10 px-3 py-1 rounded-full font-mono uppercase tracking-widest">
@@ -1040,14 +1040,14 @@ export default function CargoNetworkPage() {
                         <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-2">Shipment Cargo ID</label>
                         <input 
                           type="text" value={podTrackingId} onChange={e => setPodTrackingId(e.target.value)}
-                          className="w-full h-11 bg-surface2 border border-border rounded-xl px-3 text-xs font-bold text-white focus:outline-none focus:border-primary"
+                          className="w-full h-11 bg-surface2 border border-border rounded-xl px-3 text-xs font-bold text-text focus:outline-none focus:border-primary"
                         />
                       </div>
                       <div>
                         <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-2">Recipient Verification OTP</label>
                         <input 
                           type="text" placeholder="e.g. 2026 or 1234" value={podOtp} onChange={e => setPodOtp(e.target.value)}
-                          className="w-full h-11 bg-surface2 border border-border rounded-xl px-3 text-xs font-mono font-bold text-white focus:outline-none focus:border-primary"
+                          className="w-full h-11 bg-surface2 border border-border rounded-xl px-3 text-xs font-mono font-bold text-text focus:outline-none focus:border-primary"
                         />
                       </div>
                     </div>
@@ -1057,14 +1057,14 @@ export default function CargoNetworkPage() {
                         <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-2">Geo-Tag Latitude</label>
                         <input 
                           type="number" step="0.0001" value={podLat} onChange={e => setPodLat(+e.target.value)}
-                          className="w-full h-11 bg-surface2 border border-border rounded-xl px-3 text-xs font-mono font-bold text-white focus:outline-none"
+                          className="w-full h-11 bg-surface2 border border-border rounded-xl px-3 text-xs font-mono font-bold text-text focus:outline-none"
                         />
                       </div>
                       <div>
                         <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-2">Geo-Tag Longitude</label>
                         <input 
                           type="number" step="0.0001" value={podLng} onChange={e => setPodLng(+e.target.value)}
-                          className="w-full h-11 bg-surface2 border border-border rounded-xl px-3 text-xs font-mono font-bold text-white focus:outline-none"
+                          className="w-full h-11 bg-surface2 border border-border rounded-xl px-3 text-xs font-mono font-bold text-text focus:outline-none"
                         />
                       </div>
                     </div>
@@ -1083,7 +1083,7 @@ export default function CargoNetworkPage() {
                         }}
                         className={clsx(
                           "flex-1 h-12 rounded-xl text-xs font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2",
-                          podPhotoUploaded ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-surface2 hover:bg-surface border-border text-white"
+                          podPhotoUploaded ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-surface2 hover:bg-surface border-border text-text"
                         )}
                       >
                         {podIsUploading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
@@ -1097,7 +1097,7 @@ export default function CargoNetworkPage() {
                           setPodLng(73.7125)
                           toast.success('GPS Geo-tags synchronized with recipient terminal')
                         }}
-                        className="px-4 h-12 bg-surface2 hover:bg-surface border border-border text-text-muted hover:text-white rounded-xl text-xs font-black uppercase tracking-wide transition-colors"
+                        className="px-4 h-12 bg-surface2 hover:bg-surface border border-border text-text-muted hover:text-text rounded-xl text-xs font-black uppercase tracking-wide transition-colors"
                       >
                         Sync GPS
                       </button>
@@ -1123,7 +1123,7 @@ export default function CargoNetworkPage() {
                   </div>
 
                   {/* Right POD Receipt Panel */}
-                  <div className="p-6 rounded-2xl bg-slate-950/80 border border-border flex flex-col justify-center">
+                  <div className="p-6 rounded-2xl bg-surface2/80 border border-border flex flex-col justify-center">
                     {podResult ? (
                       <div className="space-y-4 text-center py-4">
                         <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mx-auto">
@@ -1132,12 +1132,12 @@ export default function CargoNetworkPage() {
                         <h4 className="text-sm font-black text-emerald-400 uppercase tracking-wider">Proof of Delivery Sealed</h4>
                         
                         <div className="text-left bg-surface/50 p-4 rounded-xl border border-border/80 space-y-2 text-xs font-mono">
-                          <div className="flex justify-between"><span className="text-text-muted">STATUS</span><span className="text-white font-bold">{podResult.status.toUpperCase()}</span></div>
-                          <div className="flex justify-between"><span className="text-text-muted">RECIPIENT</span><span className="text-white font-bold truncate max-w-[150px]">{podResult.recipient_name}</span></div>
+                          <div className="flex justify-between"><span className="text-text-muted">STATUS</span><span className="text-text font-bold">{podResult.status.toUpperCase()}</span></div>
+                          <div className="flex justify-between"><span className="text-text-muted">RECIPIENT</span><span className="text-text font-bold truncate max-w-[150px]">{podResult.recipient_name}</span></div>
                           <div className="flex justify-between"><span className="text-text-muted">GPS OFFSET</span><span className="text-emerald-400 font-bold">{podResult.gps_match_offset_meters}m ({podResult.gps_status.split(' ')[0]})</span></div>
                           <div className="pt-2 border-t border-border/40 flex flex-col gap-1">
                             <span className="text-text-muted block text-[8px] uppercase">Ledger Receipt Hash</span>
-                            <span className="text-slate-400 break-all text-[8px] font-mono select-all leading-tight">{podResult.blockchain_receipt}</span>
+                            <span className="text-muted break-all text-[8px] font-mono select-all leading-tight">{podResult.blockchain_receipt}</span>
                           </div>
                         </div>
                       </div>

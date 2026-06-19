@@ -28,7 +28,7 @@ const COLOR_MAP = {
 
 export default function AlertFeed({ alerts }: { alerts: Alert[] }) {
   return (
-    <Card className="border-white/5 bg-slate-900/50 backdrop-blur-xl">
+    <Card className="border-border bg-surface/50 backdrop-blur-xl">
       <CardHeader
         title="Live Fleet Events"
         subtitle="Dynamic telemetry & AI alerts"
@@ -36,7 +36,7 @@ export default function AlertFeed({ alerts }: { alerts: Alert[] }) {
       />
       <div className="px-6 pb-6 space-y-1 max-h-[400px] overflow-y-auto custom-scrollbar">
         {alerts.length === 0 ? (
-          <div className="py-10 text-center text-slate-500 text-[10px] font-bold uppercase tracking-widest">
+          <div className="py-10 text-center text-muted text-[10px] font-bold uppercase tracking-widest">
             No active alerts
           </div>
         ) : (
@@ -45,7 +45,7 @@ export default function AlertFeed({ alerts }: { alerts: Alert[] }) {
             const color = COLOR_MAP[type] || '#64748b'
             
             return (
-              <div key={id} className="flex gap-4 py-4 border-b border-white/5 last:border-0 group hover:bg-white/[0.02] -mx-2 px-2 rounded-xl transition-all animate-slide-in">
+              <div key={id} className="flex gap-4 py-4 border-b border-border last:border-0 group hover:bg-white/[0.02] -mx-2 px-2 rounded-xl transition-all animate-slide-in">
                 <div 
                   className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-inner" 
                   style={{ background: `${color}15`, border: `1px solid ${color}30` }}
@@ -53,10 +53,10 @@ export default function AlertFeed({ alerts }: { alerts: Alert[] }) {
                   <Icon size={16} style={{ color }} className={type === 'critical' ? 'animate-pulse' : ''} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-display font-black text-white text-sm tracking-tight leading-tight mb-1">{title}</div>
-                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wide leading-relaxed">{desc}</div>
+                  <div className="font-display font-black text-text text-sm tracking-tight leading-tight mb-1">{title}</div>
+                  <div className="text-[10px] font-bold text-muted uppercase tracking-wide leading-relaxed">{desc}</div>
                 </div>
-                <div className="text-[10px] font-black text-slate-600 mono whitespace-nowrap pt-1 uppercase tracking-tighter">{time}</div>
+                <div className="text-[10px] font-black text-muted mono whitespace-nowrap pt-1 uppercase tracking-tighter">{time}</div>
               </div>
             )
           })

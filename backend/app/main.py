@@ -40,13 +40,15 @@ async def lifespan(app: FastAPI):
     from app.services.spark_gps_task import spark_gps_task
 
     asyncio.create_task(fleet_health_monitor.start())
-    asyncio.create_task(spark_gps_task.start())
+    if settings.ENABLE_HARDWARE_SYNC:
+        asyncio.create_task(spark_gps_task.start())
 
     yield
 
     # Cleanup
     await fleet_health_monitor.stop()
-    await spark_gps_task.stop()
+    if settings.ENABLE_HARDWARE_SYNC:
+        await spark_gps_task.stop()
     await redis_client.close()
     await engine.dispose()
 
@@ -79,7 +81,11 @@ app.include_router(api_router, prefix="/api/v1")
 
 # Serve SPA built files (fallback for client-side routing)
 frontend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../frontend/dist"))
-app.mount("/", StaticFiles(directory=frontend_path, html=True))
+if os.path.exists(frontend_path):
+    app.mount("/", StaticFiles(directory=frontend_path, html=True))
+else:
+    import logging
+    logging.getLogger("uvicorn").warning(f"Frontend path {frontend_path} not found. Skipping static files mounting.")
 
 
 @app.get("/health", tags=["Health"])

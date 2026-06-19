@@ -135,6 +135,7 @@ export const dashboardAPI = {
 export const shipmentsAPI = {
   list: (params?: any) => api.get('/shipments/', { params }).then(r => r.data),
   get: (id: string) => api.get(`/shipments/${id}/`).then(r => r.data),
+  trackPublicly: (trackingId: string) => api.get(`/shipments/track/${trackingId}`).then(r => r.data),
   create: (data: object) => api.post('/shipments/', shipmentDataFormatter(data)).then(r => r.data),
   updateStatus: (id: string, status: string, params?: { lat?: number, lng?: number, received_by?: string, signature_data?: string }) => 
     api.patch(`/shipments/${id}/`, null, { params: { status, ...params } }).then(r => r.data),

@@ -50,7 +50,7 @@ function AddVehicleModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-surface2/80 backdrop-blur-sm" onClick={onClose} />
       <Card className="w-full max-w-md animate-fade-up relative z-10 glass shadow-xl overflow-hidden border-slate-200 bg-white" glass={false}>
         <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
           <div className="flex items-center gap-3">
@@ -59,17 +59,17 @@ function AddVehicleModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             </div>
             <h2 className="font-heading font-bold text-lg text-slate-900">Add New Vehicle</h2>
           </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-900 transition-colors">
+          <button onClick={onClose} className="text-muted hover:text-slate-900 transition-colors">
             <X size={20} />
           </button>
         </div>
 
         <form className="p-6 space-y-4" onSubmit={(e) => { e.preventDefault(); mutation.mutate(formData); }}>
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Plate Number</label>
+            <label className="text-[10px] uppercase tracking-widest font-bold text-muted ml-1">Plate Number</label>
             <input
               required
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-yellow-400/50 transition-colors mono"
+              className="w-full bg-surface2 border border-border rounded-xl px-4 py-2.5 text-sm text-text focus:outline-none focus:border-yellow-400/50 transition-colors mono"
               placeholder="e.g. DL-1005"
               value={formData.plate_number}
               onChange={e => setFormData({ ...formData, plate_number: e.target.value.toUpperCase() })}
@@ -78,7 +78,7 @@ function AddVehicleModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Vehicle Type</label>
+              <label className="text-[10px] uppercase tracking-widest font-bold text-muted ml-1">Vehicle Type</label>
               <select
                 className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-yellow-400/50 transition-colors"
                 value={formData.vehicle_type}
@@ -88,11 +88,11 @@ function AddVehicleModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Capacity (kg)</label>
+              <label className="text-[10px] uppercase tracking-widest font-bold text-muted ml-1">Capacity (kg)</label>
               <input
                 type="number"
                 required
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-yellow-400/50 transition-colors mono"
+                className="w-full bg-surface2 border border-border rounded-xl px-4 py-2.5 text-sm text-text focus:outline-none focus:border-yellow-400/50 transition-colors mono"
                 value={formData.capacity_kg}
                 onChange={e => setFormData({ ...formData, capacity_kg: Number(e.target.value) })}
               />
@@ -101,7 +101,7 @@ function AddVehicleModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Fuel Type</label>
+              <label className="text-[10px] uppercase tracking-widest font-bold text-muted ml-1">Fuel Type</label>
               <select
                 className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-yellow-400/50 transition-colors"
                 value={formData.fuel_type}
@@ -111,12 +111,12 @@ function AddVehicleModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Efficiency (km/L)</label>
+              <label className="text-[10px] uppercase tracking-widest font-bold text-muted ml-1">Efficiency (km/L)</label>
               <input
                 type="number"
                 step="0.1"
                 required
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-yellow-400/50 transition-colors mono"
+                className="w-full bg-surface2 border border-border rounded-xl px-4 py-2.5 text-sm text-text focus:outline-none focus:border-yellow-400/50 transition-colors mono"
                 value={formData.fuel_efficiency_kmpl}
                 onChange={e => setFormData({ ...formData, fuel_efficiency_kmpl: Number(e.target.value) })}
               />
@@ -124,9 +124,9 @@ function AddVehicleModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Spark Hardware ID (Optional)</label>
+            <label className="text-[10px] uppercase tracking-widest font-bold text-muted ml-1">Spark Hardware ID (Optional)</label>
             <input
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-yellow-400/50 transition-colors mono"
+              className="w-full bg-surface2 border border-border rounded-xl px-4 py-2.5 text-sm text-text focus:outline-none focus:border-yellow-400/50 transition-colors mono"
               placeholder="e.g. SPK-9901"
               value={formData.spark_id}
               onChange={e => setFormData({ ...formData, spark_id: e.target.value })}
@@ -174,7 +174,7 @@ export default function FleetPage() {
           <h1 className="font-display text-5xl font-black text-slate-900 tracking-tighter uppercase leading-none">
             Fleet <span className="text-yellow-500">Intelligence</span>
           </h1>
-          <p className="text-slate-500 font-bold tracking-tight mt-3 flex items-center gap-2">
+          <p className="text-muted font-bold tracking-tight mt-3 flex items-center gap-2">
             <Info size={14} className="text-yellow-600" />
             Monitoring <span className="text-slate-900">{summary?.total ?? '—'}</span> high-performance assets in real-time
           </p>
@@ -191,7 +191,7 @@ export default function FleetPage() {
         {[
           { label: 'Total Fleet', value: summary?.total ?? 0, colorClass: 'text-slate-900' },
           { label: 'Live Delivery', value: summary?.active ?? 0, colorClass: 'text-yellow-600' },
-          { label: 'Idle Ready', value: summary?.idle ?? 0, colorClass: 'text-slate-400' },
+          { label: 'Idle Ready', value: summary?.idle ?? 0, colorClass: 'text-muted' },
           { label: 'Scheduled Maint.', value: summary?.maintenance ?? 0, colorClass: 'text-orange-500' },
           { label: 'Disconnected', value: summary?.offline ?? 0, colorClass: 'text-red-500' },
         ].map(({ label, value, colorClass }) => (
@@ -208,10 +208,10 @@ export default function FleetPage() {
       {/* Filters + Search */}
       <div className="flex flex-wrap gap-4 items-center justify-between">
         <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-4 py-2 w-full max-w-sm focus-within:border-yellow-400/50 transition-colors shadow-sm">
-          <Search size={16} className="text-slate-400" />
+          <Search size={16} className="text-muted" />
           <input
             placeholder="Search assets by plate..."
-            className="bg-transparent border-none outline-none text-sm text-slate-900 w-full placeholder:text-slate-400"
+            className="bg-transparent border-none outline-none text-sm text-slate-900 w-full placeholder:text-muted"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -223,7 +223,7 @@ export default function FleetPage() {
               onClick={() => setFilter(s)}
               className={clsx(
                 "px-4 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all",
-                filter === s ? "bg-white text-slate-900 shadow-sm border border-slate-200" : "text-slate-500 hover:text-slate-700"
+                filter === s ? "bg-white text-slate-900 shadow-sm border border-slate-200" : "text-muted hover:text-slate-700"
               )}
             >
               {s.replace('_', ' ')}
@@ -239,7 +239,7 @@ export default function FleetPage() {
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50">
                 {['Asset Details', 'Type', 'Status', 'Fuel Status', 'Intelligence', 'Location', 'Actions'].map(h => (
-                  <th key={h} className="px-6 py-5 text-left text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{h}</th>
+                  <th key={h} className="px-6 py-5 text-left text-[10px] font-black text-muted uppercase tracking-[0.2em]">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -249,14 +249,14 @@ export default function FleetPage() {
                   <td colSpan={8} className="py-20">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <Spinner size={32} />
-                      <span className="text-slate-500 text-xs font-heading">Synchronizing Fleet Vector...</span>
+                      <span className="text-muted text-xs font-heading">Synchronizing Fleet Vector...</span>
                     </div>
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-20">
-                    <div className="flex flex-col items-center justify-center text-slate-500 gap-2">
+                    <div className="flex flex-col items-center justify-center text-muted gap-2">
                       <AlertCircle size={24} strokeWidth={1.5} />
                       <span className="text-xs">No active assets found matching criteria</span>
                     </div>
@@ -273,7 +273,7 @@ export default function FleetPage() {
                     </td>
                     <td className="px-6 py-5 text-left">
                       <div className="flex flex-col gap-1">
-                        <div className="text-[10px] font-black uppercase bg-slate-100 border border-slate-200 px-2 py-1 rounded w-fit text-slate-500 tracking-widest">
+                        <div className="text-[10px] font-black uppercase bg-slate-100 border border-slate-200 px-2 py-1 rounded w-fit text-muted tracking-widest">
                           {v.vehicle_type}
                         </div>
                         {v.spark_id && (
@@ -295,7 +295,7 @@ export default function FleetPage() {
                           <Fuel size={12} className="text-yellow-500" />
                           {/* @ts-ignore */}
                           <span className="font-display font-black text-xs text-slate-900">{v.current_fuel_liters?.toFixed(1) || '0.0'}</span>
-                          <span className="text-[10px] font-black text-slate-500">/ {v.fuel_capacity_liters || 60}L</span>
+                          <span className="text-[10px] font-black text-muted">/ {v.fuel_capacity_liters || 60}L</span>
                         </div>
                         <div className="w-20 bg-slate-200 h-1 rounded-full overflow-hidden">
                           {/* @ts-ignore */}
@@ -317,20 +317,20 @@ export default function FleetPage() {
                             </div>
                           </>
                         ) : (
-                          <span className="text-[10px] font-black text-slate-300 uppercase italic tracking-widest">No Intelligence</span>
+                          <span className="text-[10px] font-black text-muted uppercase italic tracking-widest">No Intelligence</span>
                         )}
                       </div>
                     </td>
                     <td className="px-6 py-5">
-                      <div className="font-mono text-[10px] text-slate-500 leading-tight">
+                      <div className="font-mono text-[10px] text-muted leading-tight">
                         {v.latitude ? (
                           <div className="flex flex-col gap-0.5">
                             <div className="flex items-center gap-2">
                               <span className="text-yellow-500">●</span>
-                              <span className="text-slate-600">{v.latitude.toFixed(4)}, {v.longitude.toFixed(4)}</span>
+                              <span className="text-muted">{v.latitude.toFixed(4)}, {v.longitude.toFixed(4)}</span>
                             </div>
                             {v.last_sync && (
-                              <div className="text-[9px] text-slate-400 ml-4 font-bold uppercase tracking-tighter">
+                              <div className="text-[9px] text-muted ml-4 font-bold uppercase tracking-tighter">
                                 Sync: {new Date(v.last_sync).toLocaleTimeString()}
                               </div>
                             )}
@@ -347,7 +347,7 @@ export default function FleetPage() {
                             toast.success('Initiating live tracking for ' + v.plate_number + '...')
                             navigate('/dashboard?vehicle=' + v.id)
                           }}
-                          className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-yellow-600 transition-colors tooltip tooltip-left" data-tip="Live Tracking"
+                          className="p-2 hover:bg-slate-100 rounded-lg text-muted hover:text-yellow-600 transition-colors tooltip tooltip-left" data-tip="Live Tracking"
                         >
                           <MapPin size={16} />
                         </button>
@@ -356,13 +356,13 @@ export default function FleetPage() {
                             toast.success('Loading analytics for ' + v.plate_number + '...')
                             navigate('/analytics?vehicle=' + v.id)
                           }}
-                          className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-900 transition-colors tooltip tooltip-top" data-tip="Analytics"
+                          className="p-2 hover:bg-slate-100 rounded-lg text-muted hover:text-slate-900 transition-colors tooltip tooltip-top" data-tip="Analytics"
                         >
                           <BarChart2 size={16} />
                         </button>
                         <button 
                           onClick={() => toast.success('Opening settings for ' + v.plate_number + '...')}
-                          className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-900 transition-colors tooltip tooltip-top" data-tip="Asset Settings"
+                          className="p-2 hover:bg-slate-100 rounded-lg text-muted hover:text-slate-900 transition-colors tooltip tooltip-top" data-tip="Asset Settings"
                         >
                           <Settings size={16} />
                         </button>

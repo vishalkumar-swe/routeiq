@@ -49,8 +49,8 @@ export default function SuperadminPage() {
     <div className="space-y-8">
       <div className="flex justify-between items-end">
         <div className="space-y-1">
-          <h1 className="font-heading font-bold text-3xl text-white tracking-tight">Platform Administration</h1>
-          <p className="text-slate-500 text-sm flex items-center gap-2">
+          <h1 className="font-heading font-bold text-3xl text-text tracking-tight">Platform Administration</h1>
+          <p className="text-muted text-sm flex items-center gap-2">
             <Shield size={14} className="text-purple-500" />
             Manage system users, access levels, and security policies
           </p>
@@ -58,14 +58,14 @@ export default function SuperadminPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-white/5 pb-px">
+      <div className="flex gap-2 border-b border-border pb-px">
         {['users', 'audit'].map((t) => (
           <button
             key={t}
             onClick={() => setActiveTab(t as any)}
             className={clsx(
               "px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative",
-              activeTab === t ? "text-primary bg-primary/5" : "text-slate-500 hover:text-white"
+              activeTab === t ? "text-primary bg-primary/5" : "text-muted hover:text-text"
             )}
           >
             {t}
@@ -79,11 +79,11 @@ export default function SuperadminPage() {
       {/* Filters + Search */}
       {activeTab === 'users' && (
         <div className="flex flex-wrap gap-4 items-center justify-between">
-          <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-4 py-2 w-full max-w-sm focus-within:border-primary/30 transition-colors">
-            <Search size={16} className="text-slate-500" />
+          <div className="flex items-center gap-2 bg-surface2 border border-border rounded-xl px-4 py-2 w-full max-w-sm focus-within:border-primary/30 transition-colors">
+            <Search size={16} className="text-muted" />
             <input
               placeholder="Search users by email or name..."
-              className="bg-transparent border-none outline-none text-sm text-white w-full placeholder:text-slate-600"
+              className="bg-transparent border-none outline-none text-sm text-text w-full placeholder:text-muted"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -92,14 +92,14 @@ export default function SuperadminPage() {
       )}
 
       {/* Content Table */}
-      <Card className="border-white/5 shadow-2xl relative overflow-hidden">
+      <Card className="border-border shadow-2xl relative overflow-hidden">
         {activeTab === 'users' ? (
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="border-b border-white/5">
+                <tr className="border-b border-border">
                   {['User', 'Role', 'Status', 'Joined', 'Actions'].map(h => (
-                    <th key={h} className="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">{h}</th>
+                    <th key={h} className="px-6 py-4 text-left text-[10px] font-bold text-muted uppercase tracking-widest">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -112,27 +112,27 @@ export default function SuperadminPage() {
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-20 text-center text-slate-500 text-xs">
+                    <td colSpan={5} className="py-20 text-center text-muted text-xs">
                       No users found
                     </td>
                   </tr>
                 ) : (
                   filtered.map((u: any) => (
-                    <tr key={u.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
+                    <tr key={u.id} className="border-b border-border hover:bg-white/[0.02] transition-colors group">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 border border-white/5">
+                          <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-muted border border-border">
                             <User size={14} />
                           </div>
                           <div>
-                            <div className="text-sm font-bold text-white">{u.full_name}</div>
-                            <div className="text-[10px] text-slate-500 mono">{u.email}</div>
+                            <div className="text-sm font-bold text-text">{u.full_name}</div>
+                            <div className="text-[10px] text-muted mono">{u.email}</div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <select
-                          className="bg-slate-900 border border-white/10 rounded-lg px-2 py-1 text-xs text-white outline-none focus:border-primary/50"
+                          className="bg-surface border border-border rounded-lg px-2 py-1 text-xs text-text outline-none focus:border-primary/50"
                           value={u.role}
                           onChange={(e) => handleRoleChange(u.id, e.target.value)}
                           disabled={updateMutation.isPending}
@@ -147,7 +147,7 @@ export default function SuperadminPage() {
                           {u.is_active ? 'ACTIVE' : 'DEACTIVATED'}
                         </Badge>
                       </td>
-                      <td className="px-6 py-4 text-[10px] text-slate-500 mono">
+                      <td className="px-6 py-4 text-[10px] text-muted mono">
                         {new Date(u.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4">
@@ -171,9 +171,9 @@ export default function SuperadminPage() {
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left">
               <thead>
-                <tr className="border-b border-white/5">
+                <tr className="border-b border-border">
                   {['Timestamp', 'Agent', 'Task', 'Status', 'Result'].map(h => (
-                    <th key={h} className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">{h}</th>
+                    <th key={h} className="px-6 py-4 text-[10px] font-bold text-muted uppercase tracking-widest">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -181,13 +181,13 @@ export default function SuperadminPage() {
                 {auditLoading ? (
                   <tr><td colSpan={5} className="py-20 text-center"><Spinner size={32} /></td></tr>
                 ) : auditLogs.length === 0 ? (
-                  <tr><td colSpan={5} className="py-20 text-center text-slate-500 text-xs">No audit logs recorded</td></tr>
+                  <tr><td colSpan={5} className="py-20 text-center text-muted text-xs">No audit logs recorded</td></tr>
                 ) : (
                   auditLogs.map((log: any) => (
-                    <tr key={log.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors text-xs font-bold">
-                      <td className="px-6 py-4 text-slate-500 mono text-[10px]">{new Date(log.timestamp).toLocaleString()}</td>
+                    <tr key={log.id} className="border-b border-border hover:bg-white/[0.02] transition-colors text-xs font-bold">
+                      <td className="px-6 py-4 text-muted mono text-[10px]">{new Date(log.timestamp).toLocaleString()}</td>
                       <td className="px-6 py-4 text-primary uppercase tracking-tight">{log.agent}</td>
-                      <td className="px-6 py-4 text-white max-w-xs truncate">{log.task}</td>
+                      <td className="px-6 py-4 text-text max-w-xs truncate">{log.task}</td>
                       <td className="px-6 py-4">
                         <span className={clsx(
                           "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border",
@@ -196,7 +196,7 @@ export default function SuperadminPage() {
                           {log.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-slate-400 font-medium truncate max-w-xs">{log.result}</td>
+                      <td className="px-6 py-4 text-muted font-medium truncate max-w-xs">{log.result}</td>
                     </tr>
                   ))
                 )}

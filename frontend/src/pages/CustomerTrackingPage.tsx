@@ -1,214 +1,695 @@
-import { useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useState, useRef, useEffect } from 'react'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { 
-  Package, MapPin, Clock, CheckCircle2, 
+import {
+  Package, MapPin, Clock, CheckCircle2,
   Search, Shield, Phone, AlertCircle,
-  Truck, ArrowLeft
+  Truck, Box, Zap, Navigation, ArrowRight,
+  FileText, Activity
 } from 'lucide-react'
-import { shipmentsAPI } from '@/services/api'
-import clsx from 'clsx'
+import { shipmentsAPI, telemetryWS } from '@/services/api'
+import mapboxgl from 'mapbox-gl'
+import 'mapbox-gl/dist/mapbox-gl.css'
 
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
+
+/* ─── Nexus Light Theme (Off-white/Grey & Yellow) ──────────────── */
+const T = {
+  bg:         '#F4F4F5',  // Off-white/light gray background
+  card:       '#FFFFFF',  // White cards
+  cardAlt:    '#FAFAFA',  // Slightly offset gray for inner cards
+  primary:    '#FFC107',  // Yellow accent
+  primaryDk:  '#B38700',
+  textHigh:   '#18181B',  // Near black for high contrast text
+  textMed:    '#52525B',  // Medium gray for secondary text
+  textLow:    '#A1A1AA',  // Light gray for tertiary text
+  border:     '#E4E4E7',  // Light gray borders
+  green:      '#10B981',
+  blue:       '#3B82F6',
+}
+
+const S = {
+  page: {
+    minHeight: '100vh',
+    background: T.bg,
+    fontFamily: "'Inter', sans-serif",
+    color: T.textHigh,
+  } as React.CSSProperties,
+
+  nav: {
+    background: T.card,
+    borderBottom: `1px solid ${T.border}`,
+    position: 'sticky' as const,
+    top: 0,
+    zIndex: 50,
+  },
+  navInner: {
+    maxWidth: 1400,
+    margin: '0 auto',
+    padding: '0 24px',
+    height: 72,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  logo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 16,
+    textDecoration: 'none',
+  },
+  logoBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    background: T.primary,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: 900,
+    fontSize: 20,
+    color: '#000',
+  },
+  logoText: {
+    color: T.textHigh,
+    fontWeight: 900,
+    fontSize: 20,
+    letterSpacing: '1px',
+  },
+  logoSub: {
+    color: T.primaryDk,
+    fontSize: 10,
+    fontWeight: 800,
+    letterSpacing: '0.15em',
+    textTransform: 'uppercase' as const,
+  },
+
+  main: {
+    maxWidth: 1400,
+    margin: '0 auto',
+    padding: '48px 24px 80px',
+  },
+
+  /* ── Search ───────────────────────────────── */
+  searchWrap: {
+    marginBottom: 48,
+  },
+  searchHeader: {
+    fontSize: 56,
+    fontWeight: 900,
+    color: T.textHigh,
+    letterSpacing: '-2px',
+    textTransform: 'uppercase' as const,
+    lineHeight: 1.1,
+    marginBottom: 8,
+  },
+  searchHeaderSub: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    color: T.textMed,
+    fontSize: 14,
+    fontWeight: 600,
+    marginBottom: 32,
+  },
+  searchBox: {
+    position: 'relative' as const,
+    display: 'flex',
+    maxWidth: 600,
+  },
+  searchInput: {
+    flex: 1,
+    height: 64,
+    border: `1px solid ${T.border}`,
+    borderRadius: '12px',
+    padding: '0 24px 0 60px',
+    fontSize: 16,
+    fontWeight: 600,
+    color: T.textHigh,
+    background: T.card,
+    outline: 'none',
+  },
+  searchIcon: {
+    position: 'absolute' as const,
+    left: 20,
+    top: '50%',
+    transform: 'translateY(-50%)',
+    color: T.textLow,
+  },
+  searchBtn: {
+    position: 'absolute' as const,
+    right: 8,
+    top: 8,
+    bottom: 8,
+    padding: '0 24px',
+    background: T.primary,
+    border: 'none',
+    borderRadius: 8,
+    fontWeight: 800,
+    fontSize: 13,
+    color: '#000',
+    cursor: 'pointer',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '1px',
+    transition: 'all 0.2s',
+  },
+
+  /* ── Grid Layout ──────────────────────────── */
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 420px',
+    gap: 32,
+    alignItems: 'start',
+  } as React.CSSProperties,
+
+  card: {
+    background: T.card,
+    border: `1px solid ${T.border}`,
+    borderRadius: 0, // Sharper corners for aggressive look
+    padding: 32,
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+  },
+
+  /* ── Status Badge ─────────────────────────── */
+  statusPill: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '8px 16px',
+    borderRadius: 100,
+    background: T.cardAlt,
+    border: `1px solid ${T.border}`,
+    color: T.primaryDk,
+    fontSize: 12,
+    fontWeight: 800,
+    textTransform: 'uppercase' as const,
+    letterSpacing: '2px',
+  },
+
+  trackingIdLabel: {
+    fontSize: 12,
+    fontWeight: 800,
+    color: T.textLow,
+    textTransform: 'uppercase' as const,
+    letterSpacing: '2px',
+    marginBottom: 8,
+  },
+  trackingIdValue: {
+    fontSize: 48,
+    fontWeight: 900,
+    color: T.textHigh,
+    letterSpacing: '-1px',
+    lineHeight: 1,
+    marginBottom: 40,
+  },
+
+  /* ── Progress Tracker ─────────────────────── */
+  progressWrap: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    position: 'relative' as const,
+    marginBottom: 48,
+  },
+  progressLineBg: {
+    position: 'absolute' as const,
+    top: 14,
+    left: 20,
+    right: 20,
+    height: 2,
+    background: T.border,
+    zIndex: 0,
+  },
+  progressLineFill: (percent: number) => ({
+    position: 'absolute' as const,
+    top: 14,
+    left: 20,
+    height: 2,
+    background: T.primary,
+    width: `calc(${percent}% - 40px)`,
+    transition: 'width 0.5s ease',
+    zIndex: 1,
+    boxShadow: `0 0 10px ${T.primary}`,
+  }),
+  stepItem: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    gap: 16,
+    zIndex: 2,
+    width: 80,
+  },
+  stepDot: (active: boolean, passed: boolean) => ({
+    width: 30,
+    height: 30,
+    borderRadius: '50%',
+    background: passed || active ? T.primary : T.card,
+    border: `2px solid ${passed || active ? T.primary : T.border}`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: passed || active ? '#000' : T.textLow,
+    boxShadow: active ? `0 0 20px ${T.primary}60` : 'none',
+    transition: 'all 0.3s ease',
+  }),
+  stepLabel: (active: boolean, passed: boolean) => ({
+    fontSize: 11,
+    fontWeight: active ? 800 : 700,
+    color: active ? T.textHigh : passed ? T.textMed : T.textLow,
+    textAlign: 'center' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: '1px',
+  }),
+
+  /* ── Info Rows ────────────────────────────── */
+  infoGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 32,
+    borderTop: `1px solid ${T.border}`,
+    paddingTop: 32,
+  },
+  infoCol: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 8,
+  },
+  infoLabel: {
+    fontSize: 11,
+    fontWeight: 800,
+    color: T.textLow,
+    textTransform: 'uppercase' as const,
+    letterSpacing: '2px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+  },
+  infoValue: {
+    fontSize: 18,
+    fontWeight: 700,
+    color: T.textHigh,
+  },
+  infoSub: {
+    fontSize: 13,
+    color: T.textMed,
+    fontWeight: 500,
+  },
+
+  /* ── Right Panel Cards ────────────────────── */
+  sideCard: {
+    background: T.card,
+    border: `1px solid ${T.border}`,
+    padding: 24,
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+  },
+  sideCardTitle: {
+    fontSize: 12,
+    fontWeight: 800,
+    color: T.textHigh,
+    textTransform: 'uppercase' as const,
+    letterSpacing: '2px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+
+  /* ── ETA ──────────────────────────────────── */
+  etaBox: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 20,
+  },
+  etaNumber: {
+    fontSize: 48,
+    fontWeight: 900,
+    color: T.primary,
+    lineHeight: 1,
+  },
+  etaUnit: {
+    fontSize: 14,
+    fontWeight: 800,
+    color: T.textHigh,
+    textTransform: 'uppercase' as const,
+    letterSpacing: '2px',
+  },
+
+  /* ── Vehicle Info ─────────────────────────── */
+  vehicleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 16,
+    padding: '16px',
+    background: T.cardAlt,
+    border: `1px solid ${T.border}`,
+  },
+  vehicleIcon: {
+    width: 48,
+    height: 48,
+    background: T.bg,
+    border: `1px solid ${T.border}`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: T.primaryDk,
+  },
+
+  /* ── Map ─────────────────────────────────── */
+  mapInner: {
+    width: '100%',
+    height: 300,
+    background: T.cardAlt,
+    border: `1px solid ${T.border}`,
+  },
+}
+
+/* ─── TrackingMap ──────────────────────────────────────────────── */
+function TrackingMap({ vehicle: initialVehicle, destination }: { vehicle: any; destination: any }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const mapRef       = useRef<mapboxgl.Map | null>(null)
+  const vMarker      = useRef<mapboxgl.Marker | null>(null)
+  const dMarker      = useRef<mapboxgl.Marker | null>(null)
+  const [liveVehicle, setLiveVehicle] = useState(initialVehicle)
+
+  useEffect(() => {
+    if (!initialVehicle?.id) return;
+    const ws = telemetryWS.connect((data) => {
+      if (data.type === 'TELEMETRY_UPDATE' && data.data.vehicle_id === initialVehicle.id) {
+        setLiveVehicle((prev: any) => ({
+          ...prev,
+          lat: data.data.lat,
+          lng: data.data.lng
+        }))
+      }
+    })
+    return () => { ws.close() }
+  }, [initialVehicle?.id])
+
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return
+    if (!MAPBOX_TOKEN || MAPBOX_TOKEN === 'your_mapbox_token_here') return
+
+    mapboxgl.accessToken = MAPBOX_TOKEN
+    const cx = liveVehicle?.lng || destination?.lng || 77.209
+    const cy = liveVehicle?.lat || destination?.lat || 28.613
+
+    const map = new mapboxgl.Map({
+      container: containerRef.current,
+      style: 'mapbox://styles/mapbox/light-v11', // Light map style
+      center: [cx, cy],
+      zoom: 13,
+      attributionControl: false,
+    })
+
+    map.on('load', () => {
+      if (destination?.lat && destination?.lng) {
+        const el = document.createElement('div')
+        el.style.cssText = `
+          width:24px;height:24px;border-radius:50%;
+          background:#EF4444;border:2px solid #fff;
+          box-shadow: 0 0 10px rgba(239,68,68,0.3);`
+        dMarker.current = new mapboxgl.Marker(el)
+          .setLngLat([destination.lng, destination.lat])
+          .addTo(map)
+      }
+
+      if (liveVehicle?.lat && liveVehicle?.lng) {
+        const el = document.createElement('div')
+        el.style.cssText = `
+          width:32px;height:32px;border-radius:50%;
+          background:${T.primary};border:2px solid #fff;
+          display:flex;align-items:center;justify-content:center;
+          color:#000; box-shadow:0 0 20px ${T.primary}80;
+          transition: all 1s linear;` // Smooth 1s CSS transition for marker!
+        el.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 18H3c-.6 0-1-.4-1-1V7c0-.6.4-1 1-1h10c.6 0 1 .4 1 1v11"/><path d="M14 9h4l4 4v5c0 .6-.4 1-1 1h-2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>'
+        vMarker.current = new mapboxgl.Marker(el)
+          .setLngLat([liveVehicle.lng, liveVehicle.lat])
+          .addTo(map)
+      }
+
+      if (destination?.lat && destination?.lng && liveVehicle?.lat && liveVehicle?.lng) {
+        const bounds = new mapboxgl.LngLatBounds()
+        bounds.extend([destination.lng, destination.lat])
+        bounds.extend([liveVehicle.lng, liveVehicle.lat])
+        map.fitBounds(bounds, { padding: 40, maxZoom: 14, duration: 1500 })
+      }
+    })
+
+    mapRef.current = map
+    return () => { mapRef.current?.remove(); mapRef.current = null }
+  }, [])
+
+  useEffect(() => {
+    if (!mapRef.current || !liveVehicle?.lat || !liveVehicle?.lng) return
+    if (vMarker.current) {
+      vMarker.current.setLngLat([liveVehicle.lng, liveVehicle.lat])
+      // Smoothly pan map to follow vehicle if tracking is highly active
+      // mapRef.current.panTo([liveVehicle.lng, liveVehicle.lat], { duration: 1000 })
+    }
+  }, [liveVehicle?.lat, liveVehicle?.lng])
+
+  if (!MAPBOX_TOKEN || MAPBOX_TOKEN === 'your_mapbox_token_here') {
+    return (
+      <div style={{...S.mapInner, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'}}>
+         <Activity size={32} color={T.textLow} />
+         <p style={{marginTop: 12, color: T.textLow, fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '2px'}}>Telemetry Offline</p>
+      </div>
+    )
+  }
+
+  return <div ref={containerRef} style={S.mapInner} />
+}
+
+/* ─── Steps config ─────────────────────────────────────────────── */
+const STEPS = [
+  { key: 'created',    label: 'Booked' },
+  { key: 'picked_up',  label: 'Picked Up' },
+  { key: 'in_transit', label: 'In Transit' },
+  { key: 'delivered',  label: 'Delivered' },
+]
+
+/* ─── Main Page ────────────────────────────────────────────────── */
 export default function CustomerTrackingPage() {
   const { trackingId } = useParams()
-  const [searchId, setSearchId] = useState('')
-  
+  const navigate = useNavigate()
+  const [searchId, setSearchId] = useState(trackingId || '')
+
   const { data: shipment, isLoading, error } = useQuery({
     queryKey: ['tracking', trackingId],
-    queryFn: () => trackingId ? shipmentsAPI.get(trackingId) : null,
-    enabled: !!trackingId
+    queryFn: () => trackingId ? shipmentsAPI.trackPublicly(trackingId) : null,
+    enabled: !!trackingId,
+    refetchInterval: (query) => {
+      const d = query?.state?.data as any
+      return d && ['in_transit', 'picked_up'].includes(d.status) ? 5000 : false
+    },
   })
 
+  const currentStepIdx = STEPS.findIndex(s => s.key === (shipment as any)?.status)
+  const progressPercent = currentStepIdx === -1 ? 0 : (currentStepIdx / (STEPS.length - 1)) * 100
+
   return (
-    <div className="min-h-screen bg-bg text-text selection:bg-primary/30">
-      <div className="bg-mesh" />
-      <div className="bg-grid opacity-20" />
-      
-      {/* Header */}
-      <nav className="relative z-20 border-b border-border bg-surface/50 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-dark rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-              <span className="text-bg font-black text-xl">RI</span>
-            </div>
-            <div className="hidden sm:block">
-              <div className="font-display font-black text-white uppercase tracking-tight leading-none text-sm">ROUTEIQ</div>
-              <div className="font-display font-bold text-primary uppercase tracking-[0.12em] text-[8px]">POWERED BY PRUDATA TECHNOLOGIES</div>
+    <div style={S.page}>
+      {/* ── Navbar ── */}
+      <nav style={S.nav}>
+        <div style={S.navInner}>
+          <Link to="/" style={S.logo}>
+            <div style={S.logoBox}>RI</div>
+            <div>
+              <div style={S.logoText}>ROUTEIQ</div>
+              <div style={S.logoSub}>by Prudata Logistics</div>
             </div>
           </Link>
-          
-          <div className="flex items-center gap-4">
-            <Link to="/login" className="text-xs font-black uppercase tracking-widest text-muted hover:text-white transition-colors">
-              Enterprise Login
-            </Link>
+          <div style={{display: 'flex', gap: 16, alignItems: 'center'}}>
+             <Link to="/login" style={{ color: T.textMed, fontWeight: 700, fontSize: 12, textDecoration: 'none', textTransform: 'uppercase', letterSpacing: '2px' }}>
+               Command Center
+             </Link>
           </div>
         </div>
       </nav>
 
-      <main className="relative z-10 max-w-4xl mx-auto px-6 py-12">
-        {/* Search Bar if no trackingId or for new search */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-black text-white font-display tracking-tighter uppercase mb-4">
-            Track <span className="text-primary">Your Cargo</span>
+      <main style={S.main}>
+
+        {/* ── Search ── */}
+        <div style={S.searchWrap}>
+          <h1 style={S.searchHeader}>
+            CARGO <span style={{color: T.primaryDk}}>TRACKER</span>
           </h1>
-          <form 
-            onSubmit={(e) => { e.preventDefault(); if(searchId) window.location.href = `/track/${searchId}` }}
-            className="relative group"
+          <div style={S.searchHeaderSub}>
+             <Activity size={16} color={T.primaryDk} />
+             Enterprise Multi-Agent AI Ecosystem
+          </div>
+          
+          <form
+            onSubmit={e => { e.preventDefault(); if (searchId) navigate(`/track/${searchId}`) }}
+            style={S.searchBox}
           >
-            <input 
-              type="text" 
-              placeholder="Enter Tracking ID (e.g., SN-12345678)"
+            <span style={S.searchIcon}><Search size={20} /></span>
+            <input
+              style={S.searchInput}
+              type="text"
+              placeholder="ENTER SHIPMENT ID..."
               value={searchId}
-              onChange={(e) => setSearchId(e.target.value)}
-              className="w-full h-16 bg-surface border border-border rounded-2xl px-16 text-sm font-bold text-white placeholder:text-muted focus:outline-none focus:border-primary transition-all shadow-2xl"
+              onChange={e => setSearchId(e.target.value)}
             />
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-primary transition-colors" size={20} />
-            <button className="absolute right-4 top-1/2 -translate-y-1/2 h-10 px-6 bg-primary text-bg font-black uppercase text-[10px] tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all">
-              Track
+            <button type="submit" style={S.searchBtn}>
+              Track Cargo
             </button>
           </form>
         </div>
 
+        {/* ── Loading ── */}
         {isLoading && (
-          <div className="py-20 flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted animate-pulse">Consulting Nexus AI...</p>
+          <div style={{ padding: '64px 0' }}>
+             <div style={{color: T.primaryDk, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px', display: 'flex', alignItems: 'center', gap: 12}}>
+               <Activity size={20} className="animate-pulse" />
+               Locating shipment telemetry...
+             </div>
           </div>
         )}
 
+        {/* ── Error ── */}
         {error && (
-          <div className="p-8 rounded-3xl bg-error/10 border border-error/20 flex flex-col items-center text-center gap-4 animate-fade-up">
-            <AlertCircle className="text-error w-12 h-12" />
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.05)', border: '1px solid #EF4444', 
+            padding: '24px', display: 'flex', alignItems: 'center', gap: 16,
+            maxWidth: 600
+          }}>
+            <AlertCircle size={32} color="#EF4444" />
             <div>
-              <h3 className="text-lg font-black text-white uppercase tracking-tight">Tracking ID Not Found</h3>
-              <p className="text-muted text-sm font-bold mt-1">Please verify your ID and try again or contact support.</p>
+              <div style={{ fontWeight: 800, fontSize: 16, color: '#EF4444', textTransform: 'uppercase', letterSpacing: '1px' }}>Signal Lost</div>
+              <div style={{ color: T.textMed, fontSize: 14, marginTop: 4 }}>
+                Unable to locate shipment data. Verify the ID and try again.
+              </div>
             </div>
           </div>
         )}
 
+        {/* ── Shipment Data ── */}
         {shipment && (
-          <div className="space-y-8 animate-fade-up">
-            {/* Status Card */}
-            <div className="p-10 rounded-[2.5rem] bg-surface border border-border shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-8 opacity-5">
-                <Truck size={120} className="text-primary rotate-12" />
-              </div>
+          <div style={S.grid}>
+
+            {/* ── LEFT COLUMN ── */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
               
-              <div className="relative z-10">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+              <div style={S.card}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
                   <div>
-                    <span className="px-3 py-1 rounded-lg bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/20">
-                      {shipment.status.replace('_', ' ')}
-                    </span>
-                    <h2 className="text-5xl font-black text-white font-display tracking-tighter uppercase mt-4">
-                      {shipment.tracking_id}
-                    </h2>
+                    <div style={S.trackingIdLabel}>Tracking ID</div>
+                    <div style={S.trackingIdValue}>{(shipment as any).tracking_id}</div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-1">Estimated Delivery</p>
-                    <p className="text-2xl font-black text-white uppercase">Today, 4:30 PM</p>
+                  <div style={S.statusPill}>
+                    <span style={{width: 8, height: 8, borderRadius: '50%', background: T.primaryDk, boxShadow: `0 0 10px ${T.primary}`}} />
+                    {(shipment as any).status.replace('_', ' ')}
                   </div>
                 </div>
 
-                {/* Progress Bar */}
-                <div className="relative mb-16">
-                   <div className="h-1.5 w-full bg-surface2 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-primary shadow-[0_0_12px_rgba(79,172,254,0.6)]" 
-                        style={{ width: shipment.status === 'delivered' ? '100%' : shipment.status === 'in_transit' ? '60%' : '20%' }} 
-                      />
-                   </div>
-                   <div className="absolute top-0 left-0 w-full flex justify-between -translate-y-1/2">
-                      {['booked', 'picked_up', 'in_transit', 'delivered'].map((step) => (
-                        <div key={step} className="flex flex-col items-center gap-3">
-                           <div className={clsx(
-                             "w-4 h-4 rounded-full border-4 border-surface shadow-lg transition-all duration-500",
-                             shipment.status === step || (shipment.status === 'delivered' && step !== 'delivered') ? "bg-primary scale-125" : "bg-muted"
-                           )} />
-                           <span className={clsx(
-                             "text-[9px] font-black uppercase tracking-widest",
-                             shipment.status === step ? "text-white" : "text-muted"
-                           )}>
-                             {step.replace('_', ' ')}
-                           </span>
-                        </div>
-                      ))}
-                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-6">
-                    <div className="flex gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-surface2 flex items-center justify-center shrink-0 border border-border">
-                        <MapPin className="text-primary" size={18} />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-1">Destination</p>
-                        <p className="text-sm font-bold text-white tracking-tight leading-relaxed">{shipment.delivery_point?.address || 'N/A'}</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-surface2 flex items-center justify-center shrink-0 border border-border">
-                        <Package className="text-primary" size={18} />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-1">Cargo Details</p>
-                        <p className="text-sm font-bold text-white tracking-tight">{shipment.total_weight_kg}kg • {shipment.priority.toUpperCase()} PRIORITY</p>
-                      </div>
-                    </div>
-                  </div>
+                {/* Progress Tracker */}
+                <div style={S.progressWrap}>
+                  <div style={S.progressLineBg} />
+                  <div style={S.progressLineFill(progressPercent)} />
                   
-                  <div className="p-6 rounded-3xl bg-primary/5 border border-primary/10 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                       <Shield className="text-primary" size={24} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black text-primary uppercase tracking-widest">AI Assurance</p>
-                      <p className="text-xs text-muted font-bold mt-0.5 leading-relaxed">Nexus AI is monitoring this shipment for route anomalies and delay risks.</p>
-                    </div>
+                  {STEPS.map((step, idx) => {
+                    const passed = idx < currentStepIdx
+                    const active = idx === currentStepIdx
+                    return (
+                      <div key={step.key} style={S.stepItem}>
+                        <div style={S.stepDot(active, passed)}>
+                          {passed && <CheckCircle2 size={16} />}
+                        </div>
+                        <div style={S.stepLabel(active, passed)}>{step.label}</div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Details Grid */}
+                <div style={S.infoGrid}>
+                  <div style={S.infoCol}>
+                    <div style={S.infoLabel}><MapPin size={14} color={T.primaryDk} /> Origin</div>
+                    <div style={S.infoValue}>{(shipment as any).origin_name || 'Terminal Alpha'}</div>
+                    <div style={S.infoSub}>{(shipment as any).origin_address || 'N/A'}</div>
+                  </div>
+                  <div style={S.infoCol}>
+                    <div style={S.infoLabel}><Navigation size={14} color={T.primaryDk} /> Destination</div>
+                    <div style={S.infoValue}>{(shipment as any).destination?.name || 'Customer Site'}</div>
+                    <div style={S.infoSub}>{(shipment as any).destination?.address || 'N/A'}</div>
                   </div>
                 </div>
               </div>
+
+              {/* Cargo Specs */}
+              <div style={{...S.card, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24}}>
+                 <div style={S.infoCol}>
+                    <div style={S.infoLabel}>Weight</div>
+                    <div style={S.infoValue}>{(shipment as any).total_weight_kg || 0} KG</div>
+                 </div>
+                 <div style={S.infoCol}>
+                    <div style={S.infoLabel}>Items</div>
+                    <div style={S.infoValue}>{(shipment as any).total_items || 0}</div>
+                 </div>
+                 <div style={S.infoCol}>
+                    <div style={S.infoLabel}>Priority</div>
+                    <div style={{...S.infoValue, color: T.primaryDk}}>{(shipment as any).priority?.toUpperCase() || 'STD'}</div>
+                 </div>
+              </div>
+
             </div>
 
-            {/* Action Buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-               <button className="h-16 bg-surface2 border border-border rounded-2xl flex items-center justify-center gap-3 text-[10px] font-black uppercase tracking-widest text-white hover:border-primary transition-all">
-                  <Phone size={16} className="text-primary" />
-                  Contact Carrier
-               </button>
-               <button className="h-16 bg-surface2 border border-border rounded-2xl flex items-center justify-center gap-3 text-[10px] font-black uppercase tracking-widest text-white hover:border-primary transition-all">
-                  <CheckCircle2 size={16} className="text-primary" />
-                  Download Invoice
-               </button>
+            {/* ── RIGHT COLUMN ── */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+               
+               {/* ETA */}
+               <div style={S.sideCard}>
+                 <div style={S.sideCardTitle}>
+                   <span>Estimated Arrival</span>
+                   <Clock size={16} color={T.primaryDk} />
+                 </div>
+                 <div style={S.etaBox}>
+                   <div style={S.etaNumber}>
+                     {(shipment as any).eta_minutes ? Math.round((shipment as any).eta_minutes) : '--'}
+                   </div>
+                   <div style={S.etaUnit}>
+                     <div style={{color: T.textHigh}}>Minutes</div>
+                     <div style={{color: T.textLow, fontSize: 11, marginTop: 4}}>Calculated by AI</div>
+                   </div>
+                 </div>
+               </div>
+
+               {/* Map */}
+               <div style={{...S.sideCard, padding: 0}}>
+                 <TrackingMap vehicle={(shipment as any).vehicle} destination={(shipment as any).destination} />
+                 <div style={{padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: T.cardAlt}}>
+                   <div style={{fontSize: 11, fontWeight: 800, color: T.primaryDk, textTransform: 'uppercase', letterSpacing: '2px'}}>Live Telemetry Pipe</div>
+                   <div style={{fontSize: 11, color: T.textMed}}>GPS Sync: Active</div>
+                 </div>
+               </div>
+
+               {/* Vehicle Info */}
+               <div style={S.sideCard}>
+                 <div style={S.sideCardTitle}>Carrier Details</div>
+                 <div style={S.vehicleRow}>
+                   <div style={S.vehicleIcon}>
+                     <Truck size={24} />
+                   </div>
+                   <div>
+                     <div style={{fontSize: 18, fontWeight: 800, color: T.textHigh}}>
+                       {(shipment as any).vehicle?.plate_number || 'Awaiting Assignment'}
+                     </div>
+                     <div style={{fontSize: 12, color: T.textMed, marginTop: 4, textTransform: 'uppercase', letterSpacing: '1px'}}>
+                       {(shipment as any).vehicle?.type || 'Vehicle'} • {(shipment as any).vehicle?.status?.replace('_', ' ') || 'Standby'}
+                     </div>
+                   </div>
+                 </div>
+               </div>
+
             </div>
           </div>
         )}
-        
-        {!trackingId && !shipment && (
-           <div className="py-20 grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                { icon: Package, title: "Real-time Tracking", desc: "Live GPS updates from the Nexus AI network." },
-                { icon: Shield, title: "Secure Transit", desc: "AI-powered anomaly detection for cargo safety." },
-                { icon: Clock, title: "Smart ETAs", desc: "Predictive ETAs based on traffic and weather." }
-              ].map((f, i) => (
-                <div key={i} className="p-8 rounded-3xl bg-surface border border-border hover:border-primary/30 transition-all group text-center">
-                  <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                    <f.icon className="text-primary" size={24} />
-                  </div>
-                  <h4 className="text-sm font-black text-white uppercase tracking-tight mb-2">{f.title}</h4>
-                  <p className="text-xs text-muted font-bold leading-relaxed">{f.desc}</p>
-                </div>
-              ))}
-           </div>
-        )}
+
       </main>
 
-      <footer className="relative z-20 py-12 border-t border-border mt-12 bg-surface/30">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em]">© 2026 ROUTEIQ • POWERED BY PRUDATA TECHNOLOGIES</p>
-        </div>
-      </footer>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+      `}</style>
     </div>
   )
 }

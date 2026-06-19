@@ -14,6 +14,7 @@ import ShipmentsPage from '@/pages/ShipmentsPage'
 import DriverPage from '@/pages/DriverPage'
 import CustomerTrackingPage from '@/pages/CustomerTrackingPage'
 import LiveBiddingPage from '@/pages/LiveBiddingPage'
+import LiveMapPage from '@/pages/LiveMapPage'
 
 function PrivateRoute({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) {
   const token = useAuthStore(s => s.token)
@@ -37,6 +38,11 @@ export default function App() {
         <Route path="/track" element={<CustomerTrackingPage />} />
         <Route path="/track/:trackingId" element={<CustomerTrackingPage />} />
         <Route path="/driver" element={
+          <PrivateRoute allowedRoles={['superadmin', 'admin', 'driver']}>
+            <DriverPage />
+          </PrivateRoute>
+        } />
+        <Route path="/driver/dashboard" element={
           <PrivateRoute allowedRoles={['superadmin', 'admin', 'driver']}>
             <DriverPage />
           </PrivateRoute>
@@ -98,6 +104,7 @@ export default function App() {
             </PrivateRoute>
           } />
         </Route>
+          <Route path="live-map" element={<PrivateRoute allowedRoles={['superadmin', 'admin']}><LiveMapPage /></PrivateRoute>} />
       </Routes>
     </BrowserRouter>
   )

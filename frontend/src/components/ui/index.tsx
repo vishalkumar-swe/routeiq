@@ -17,7 +17,7 @@ export function CardHeader({ title, subtitle, action }: {
     <div className="px-5 pt-5 pb-4 flex items-start justify-between">
       <div>
         <div className="font-heading font-semibold text-base text-slate-900">{title}</div>
-        {subtitle && <div className="text-xs text-slate-400 mt-1">{subtitle}</div>}
+        {subtitle && <div className="text-xs text-muted mt-1">{subtitle}</div>}
       </div>
       {action && <div>{action}</div>}
     </div>
@@ -32,7 +32,7 @@ const badgeStyles: Record<BadgeVariant, string> = {
   orange: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
   blue:   'bg-blue-500/10 text-blue-400 border-blue-500/20',
   warn:   'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-  muted:  'bg-slate-800/50 text-slate-400 border-slate-700/50',
+  muted:  'bg-slate-800/50 text-muted border-border/50',
 }
 
 export function Badge({ children, variant = 'green', className }: { children: ReactNode; variant?: BadgeVariant; className?: string }) {
@@ -74,7 +74,7 @@ export function Button({
   children, variant = 'ghost', size = 'md', className, ...props
 }: ButtonProps) {
   const variants = {
-    ghost:  'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+    ghost:  'bg-slate-50 border border-slate-200 text-muted hover:bg-slate-100 hover:text-slate-900',
     accent: 'bg-yellow-400 text-black font-black hover:bg-yellow-300 shadow-[0_8px_24px_rgba(249,201,53,0.3)] hover:scale-[1.02]',
     danger: 'bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20',
   }
@@ -119,7 +119,7 @@ export function KPICard({ label, value, delta, deltaUp, icon, color, progress }:
         )}
       </div>
       <div className="font-display text-4xl font-black tracking-tighter text-slate-900 mb-2 leading-none">{value}</div>
-      <div className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{label}</div>
+      <div className="text-[10px] font-black text-muted uppercase tracking-[0.2em]">{label}</div>
       
       {progress !== undefined && (
         <div className="mt-6 h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -137,7 +137,7 @@ export function KPICard({ label, value, delta, deltaUp, icon, color, progress }:
 export function Spinner({ size = 24 }: { size?: number }) {
   return (
     <div 
-      className="border-2 border-slate-800 border-t-yellow-400 rounded-full animate-spin"
+      className="border-2 border-border border-t-yellow-400 rounded-full animate-spin"
       style={{ width: size, height: size }} 
     />
   )

@@ -44,7 +44,7 @@ export default function LiveMap({ vehicles, selectedVehicleId }: { vehicles: Veh
     setIsSearching(true)
     try {
       const resp = await axios.get(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json`,
+        `${import.meta.env.VITE_MAPBOX_GEOCODING_URL}/${encodeURIComponent(searchQuery)}.json`,
         {
           params: {
             access_token: MAPBOX_TOKEN,
@@ -73,13 +73,13 @@ export default function LiveMap({ vehicles, selectedVehicleId }: { vehicles: Veh
     if (!MAPBOX_TOKEN || MAPBOX_TOKEN === 'your_mapbox_token_here') {
       if (mapRef.current) {
         mapRef.current.innerHTML = `
-          <div class="flex flex-col items-center justify-center h-full bg-slate-900 text-slate-400 p-8 text-center rounded-[24px]">
-            <div class="w-16 h-16 mb-4 rounded-full bg-slate-800 flex items-center justify-center border border-white/5 shadow-2xl">🌍</div>
-            <h3 class="text-white font-black uppercase tracking-widest mb-2">Simulated Geospatial Layer</h3>
+          <div class="flex flex-col items-center justify-center h-full bg-surface text-muted p-8 text-center rounded-[24px]">
+            <div class="w-16 h-16 mb-4 rounded-full bg-slate-800 flex items-center justify-center border border-border shadow-2xl">🌍</div>
+            <h3 class="text-text font-black uppercase tracking-widest mb-2">Simulated Geospatial Layer</h3>
             <p class="text-[10px] font-bold max-w-xs mb-6 uppercase tracking-tight opacity-60">Providing Pan-India visualization via heuristic cluster mapping. Mapbox token required for high-fidelity textures.</p>
             <div class="flex gap-2">
                <div class="px-4 py-2 bg-yellow-500 text-black text-[10px] font-black uppercase rounded-xl tracking-tighter">Core Active</div>
-               <div class="px-4 py-2 bg-slate-800 text-slate-500 text-[10px] font-black uppercase rounded-xl tracking-tighter">Textures: Simulation</div>
+               <div class="px-4 py-2 bg-slate-800 text-muted text-[10px] font-black uppercase rounded-xl tracking-tighter">Textures: Simulation</div>
             </div>
           </div>
         `
@@ -169,23 +169,23 @@ export default function LiveMap({ vehicles, selectedVehicleId }: { vehicles: Veh
         new mapboxgl.Popup({ closeButton: false, anchor: 'bottom', maxWidth: '300px', className: 'truck-popup' })
           .setLngLat(coords)
           .setHTML(`
-            <div class="bg-slate-900 text-white p-4 rounded-2xl border border-white/10 shadow-2xl font-sans min-w-[200px]">
-              <div class="flex items-center justify-between mb-3 border-b border-white/5 pb-2">
+            <div class="bg-surface text-text p-4 rounded-2xl border border-border shadow-2xl font-sans min-w-[200px]">
+              <div class="flex items-center justify-between mb-3 border-b border-border pb-2">
                 <span class="text-xs font-black uppercase text-yellow-500 tracking-tighter">${props.plate}</span>
-                <span class="text-[10px] uppercase font-bold text-slate-500">${props.emoji}</span>
+                <span class="text-[10px] uppercase font-bold text-muted">${props.emoji}</span>
               </div>
               <div class="space-y-2">
-                <div class="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+                <div class="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-muted">
                   <span>LIVE SPEED</span>
-                  <span class="text-white">${target?.speed?.toFixed(0) || 0} KM/H</span>
+                  <span class="text-text">${target?.speed?.toFixed(0) || 0} KM/H</span>
                 </div>
-                <div class="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+                <div class="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-muted">
                   <span>FUEL PROBE</span>
-                  <span class="text-white">${target?.fuel?.toFixed(1) || '--'}%</span>
+                  <span class="text-text">${target?.fuel?.toFixed(1) || '--'}%</span>
                 </div>
               </div>
               <div class="mt-4 pt-2 flex gap-2">
-                 <div class="px-3 py-1 bg-white/5 rounded-lg text-[8px] font-black uppercase text-slate-500 tracking-tighter">TELEMETRY: SYNCED</div>
+                 <div class="px-3 py-1 bg-surface2 rounded-lg text-[8px] font-black uppercase text-muted tracking-tighter">TELEMETRY: SYNCED</div>
                  <div class="px-3 py-1 bg-yellow-500/10 rounded-lg text-[8px] font-black uppercase text-yellow-500 tracking-tighter">OP STATUS: ${props.status}</div>
               </div>
             </div>
@@ -274,7 +274,7 @@ export default function LiveMap({ vehicles, selectedVehicleId }: { vehicles: Veh
   }, [selectedVehicleId, vehicles])
 
   return (
-    <div className="relative w-full h-full bg-slate-950 rounded-[28px] overflow-hidden border border-white/10 shadow-2xl">
+    <div className="relative w-full h-full bg-surface2 rounded-[28px] overflow-hidden border border-border shadow-2xl">
       {/* Pan-India Search Bar */}
       {MAPBOX_TOKEN && MAPBOX_TOKEN !== 'your_mapbox_token_here' && (
         <form 
@@ -287,16 +287,16 @@ export default function LiveMap({ vehicles, selectedVehicleId }: { vehicles: Veh
               placeholder="Search Pan-India Locations..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full h-12 bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-2xl px-12 text-xs font-bold text-white placeholder:text-slate-500 focus:outline-none focus:border-yellow-500/50 transition-all shadow-2xl"
+              className="w-full h-12 bg-surface/90 backdrop-blur-md border border-border rounded-2xl px-12 text-xs font-bold text-text placeholder:text-muted focus:outline-none focus:border-yellow-500/50 transition-all shadow-2xl"
             />
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-yellow-500 transition-colors">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-yellow-500 transition-colors">
               {isSearching ? <Navigation size={14} className="animate-pulse" /> : <Search size={14} />}
             </div>
             {searchQuery && (
               <button 
                 type="button" 
                 onClick={() => setSearchQuery('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-text"
               >
                 <X size={14} />
               </button>
@@ -308,10 +308,10 @@ export default function LiveMap({ vehicles, selectedVehicleId }: { vehicles: Veh
       <div ref={mapRef} className="w-full h-full min-h-[400px]" />
       
       {/* Legend / Overlay */}
-      <div className="absolute bottom-6 left-6 z-20 flex flex-col gap-2 p-4 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-white/10 shadow-2xl">
+      <div className="absolute bottom-6 left-6 z-20 flex flex-col gap-2 p-4 rounded-2xl bg-surface/80 backdrop-blur-md border border-border shadow-2xl">
          <div className="flex items-center gap-3">
             <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
-            <span className="text-[10px] font-black uppercase text-white/80 tracking-widest">Active Corridors</span>
+            <span className="text-[10px] font-black uppercase text-text/80 tracking-widest">Active Corridors</span>
          </div>
          <div className="flex gap-4 mt-2">
             {[
@@ -320,7 +320,7 @@ export default function LiveMap({ vehicles, selectedVehicleId }: { vehicles: Veh
             ].map(l => (
               <div key={l.label} className="flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: l.color }} />
-                <span className="text-[8px] font-bold text-slate-500 uppercase">{l.label}</span>
+                <span className="text-[8px] font-bold text-muted uppercase">{l.label}</span>
               </div>
             ))}
          </div>

@@ -54,14 +54,14 @@ export default function AnalyticsPage() {
           <h1 className="font-display text-5xl font-black text-slate-900 tracking-tighter uppercase leading-none">
             Fleet <span className="text-yellow-500">Analytics</span>
           </h1>
-          <p className="text-slate-500 font-bold tracking-tight mt-3">
+          <p className="text-muted font-bold tracking-tight mt-3">
             Real-time fleet performance & AI optimization clusters
           </p>
         </div>
         <div className="flex gap-4">
-          <div className="px-6 py-3 bg-slate-900 rounded-2xl shadow-xl">
+          <div className="px-6 py-3 bg-surface rounded-2xl shadow-xl">
              <div className="text-[10px] font-black text-yellow-500 uppercase tracking-widest mb-1">On-Time Accuracy</div>
-             <div className="text-2xl font-black text-white leading-none">{metrics?.on_time_rate_pct}%</div>
+             <div className="text-2xl font-black text-text leading-none">{metrics?.on_time_rate_pct}%</div>
           </div>
         </div>
       </div>

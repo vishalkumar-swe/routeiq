@@ -1,7 +1,7 @@
 """SQLAlchemy ORM models."""
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from sqlalchemy import (
     Boolean, DateTime, Enum, Float, ForeignKey,
@@ -50,6 +50,8 @@ class User(Base, TimestampMixin):
 
 # ================= VEHICLES =================
 class Vehicle(Base, TimestampMixin):
+    # GPS tracking relationship
+    gps_points: Mapped[List["GPSPoint"]] = relationship("GPSPoint", back_populates="vehicle", cascade="all, delete-orphan")
     __tablename__ = "vehicles"
 
     id: Mapped[uuid.UUID] = uuid_pk()
@@ -71,7 +73,8 @@ class Vehicle(Base, TimestampMixin):
         default="available",
     )
 
-    # --- Live Tracking ---
+    # GPS tracking relationship
+    gps_points: Mapped[List["GPSPoint"]] = relationship("GPSPoint", back_populates="vehicle", cascade="all, delete-orphan")
     latitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     longitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     last_heartbeat: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -81,6 +84,7 @@ class Vehicle(Base, TimestampMixin):
     last_sync: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     driver_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
+    cargo_types: Mapped[Optional[list]] = mapped_column(JSON, default=list)
 
     driver = relationship("User", back_populates="vehicles")
     routes = relationship("Route", back_populates="vehicle")
@@ -359,7 +363,18 @@ class Payment(Base, TimestampMixin):
     invoice = relationship("Invoice", back_populates="payments")
 
 
-# ================= AI AGENTS =================
+
+class GPSPoint(Base, TimestampMixin):
+    __tablename__ = "gps_points"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    vehicle_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("vehicles.id"))
+    latitude: Mapped[float] = mapped_column(Float)
+    longitude: Mapped[float] = mapped_column(Float)
+    accuracy: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    vehicle = relationship("Vehicle", back_populates="gps_points")
+
 class AIAgentLog(Base, TimestampMixin):
     __tablename__ = "ai_agent_logs"
 

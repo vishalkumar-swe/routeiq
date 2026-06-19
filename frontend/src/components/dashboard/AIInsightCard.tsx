@@ -19,7 +19,7 @@ export const AIInsightCard: React.FC<AIInsightCardProps> = ({ title, insight, sc
         <div className="p-3 rounded-xl bg-yellow-100 text-yellow-600 border border-yellow-200">
           <Brain className="w-6 h-6 animate-pulse" />
         </div>
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-50 border border-slate-200 text-xs font-medium text-slate-500">
+        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-50 border border-slate-200 text-xs font-medium text-muted">
           <Zap className="w-3 h-3 text-yellow-500" />
           SYSTEM AI ACTIVE
         </div>
@@ -29,7 +29,7 @@ export const AIInsightCard: React.FC<AIInsightCardProps> = ({ title, insight, sc
         {title}
       </h3>
       
-      <p className="text-slate-500 text-sm leading-relaxed mb-6 font-medium">
+      <p className="text-muted text-sm leading-relaxed mb-6 font-medium">
         {insight}
       </p>
 
@@ -38,7 +38,7 @@ export const AIInsightCard: React.FC<AIInsightCardProps> = ({ title, insight, sc
           <span className="text-3xl font-black text-slate-900 font-space tracking-tighter">
             {score}%
           </span>
-          <span className="text-slate-500 text-[10px] uppercase font-bold tracking-widest block ml-1">
+          <span className="text-muted text-[10px] uppercase font-bold tracking-widest block ml-1">
             Optimization Score
           </span>
         </div>

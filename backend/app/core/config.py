@@ -33,15 +33,20 @@ class Settings:
 
     # External APIs
     GOOGLE_MAPS_API_KEY: str = os.getenv("GOOGLE_MAPS_API_KEY", "")
+    # Google OAuth
+    DEFAULT_GOOGLE_ROLE: str = os.getenv("DEFAULT_GOOGLE_ROLE", "admin")
     OPENWEATHER_API_KEY: str = os.getenv("OPENWEATHER_API_KEY", "")
     TOMTOM_API_KEY: str = os.getenv("TOMTOM_API_KEY", "")
     MAPBOX_ACCESS_TOKEN: str = os.getenv("MAPBOX_ACCESS_TOKEN", "")
+    ENABLE_MOBILE_GPS: bool = os.getenv("ENABLE_MOBILE_GPS", "false").lower() == "true"
+    ENABLE_HARDWARE_SYNC: bool = os.getenv("ENABLE_HARDWARE_SYNC", "false").lower() == "true"
 
     # SparkGPS (Roadcast) Integration
     SPARK_GPS_API_URL: str = os.getenv("SPARK_GPS_API_URL", "https://api.roadcast.in/v1")
     SPARK_GPS_API_TOKEN: str = os.getenv("SPARK_GPS_API_TOKEN", "")
     SPARK_GPS_USERNAME: str = os.getenv("SPARK_GPS_USERNAME", "")
     SPARK_GPS_PASSWORD: str = os.getenv("SPARK_GPS_PASSWORD", "")
+
 
     # AWS
     AWS_REGION: str = os.getenv("AWS_REGION", "ap-south-1")
@@ -66,6 +71,7 @@ class Settings:
         return [
             "http://localhost:3000",
             "http://localhost:5173",
+            "http://localhost:5174",
             "http://localhost:3005",
             "http://127.0.0.1:3005"
         ]

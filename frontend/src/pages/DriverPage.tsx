@@ -53,9 +53,9 @@ function SignaturePad({ onSave }: { onSave: (data: string) => void }) {
 
   return (
     <div className="space-y-4">
-      <div className="bg-slate-900 border-2 border-slate-800 rounded-[2rem] overflow-hidden touch-none h-48 relative">
+      <div className="bg-surface border-2 border-border rounded-[2rem] overflow-hidden touch-none h-48 relative">
          <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
-            <span className="text-4xl font-black uppercase tracking-[1em] text-white">SIGN HERE</span>
+            <span className="text-4xl font-black uppercase tracking-[1em] text-text">SIGN HERE</span>
          </div>
         <canvas 
           onMouseDown={startDrawing}
@@ -89,6 +89,7 @@ export default function DriverPage() {
   const [showPOD, setShowPOD] = useState(false);
   const [recipientName, setRecipientName] = useState('');
   const [signature, setSignature] = useState<string | null>(null);
+  const [isSimulating, setIsSimulating] = useState(false);
 
   // 1. Fetch active route
   const { data: routes = [], isLoading } = useQuery({
@@ -106,13 +107,41 @@ export default function DriverPage() {
     if (currentStop && !activeStopId) setActiveStopId(currentStop.id);
   }, [activeRoute, currentStop]);
 
-  // 2. Real Mobile GPS Telemetry
+  // 2. Real Mobile GPS Telemetry OR Simulation
   useEffect(() => {
     if (shiftStatus === 'OFFLINE' || !activeRoute) return;
 
     let watchId: number;
+    let simInterval: any;
 
-    if ('geolocation' in navigator) {
+    if (isSimulating && currentStop) {
+      // Simulate driving from a random nearby location or current vehicle location toward destination
+      let currentLat = activeRoute.vehicle?.latitude || 28.55;
+      let currentLng = activeRoute.vehicle?.longitude || 77.20;
+      const targetLat = currentStop.delivery_point?.lat || 28.61;
+      const targetLng = currentStop.delivery_point?.lng || 77.23;
+      
+      const steps = 60; // Arrive in ~60 seconds
+      const latStep = (targetLat - currentLat) / steps;
+      const lngStep = (targetLng - currentLng) / steps;
+      
+      toast.success('GPS Simulator Active. Transmitting live telemetry.');
+
+      simInterval = setInterval(() => {
+        currentLat += latStep;
+        currentLng += lngStep;
+        
+        telemetryAPI.ingest({
+          vehicle_id: activeRoute.vehicle_id,
+          latitude: currentLat,
+          longitude: currentLng,
+          speed_kmph: 45 + Math.random() * 10,
+          fuel_level_pct: 82,
+          heading: 0
+        }).catch(console.error);
+
+      }, 1000);
+    } else if ('geolocation' in navigator) {
       watchId = navigator.geolocation.watchPosition(
         (position) => {
           telemetryAPI.ingest({
@@ -126,18 +155,16 @@ export default function DriverPage() {
         },
         (error) => {
           console.error('GPS Error:', error);
-          toast.error('GPS Signal Lost. Please check permissions.');
         },
         { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
       );
-    } else {
-      toast.error('Geolocation is not supported by this browser.');
     }
 
     return () => {
       if (watchId) navigator.geolocation.clearWatch(watchId);
+      if (simInterval) clearInterval(simInterval);
     };
-  }, [shiftStatus, activeRoute]);
+  }, [shiftStatus, activeRoute, isSimulating, currentStop?.id]);
 
   const updateStatus = useMutation({
     mutationFn: ({ shipmentId, status, params }: any) => 
@@ -180,16 +207,16 @@ export default function DriverPage() {
   };
 
   if (isLoading) return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-surface2 flex flex-col items-center justify-center p-6">
       <Loader2 className="w-12 h-12 text-yellow-500 animate-spin mb-4" />
-      <p className="text-slate-500 font-black uppercase tracking-widest text-[10px]">Verifying Manifest...</p>
+      <p className="text-muted font-black uppercase tracking-widest text-[10px]">Verifying Manifest...</p>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-yellow-500 pb-24 select-none">
+    <div className="min-h-screen bg-surface2 text-text font-sans selection:bg-yellow-500 pb-24 select-none">
       {/* Dynamic Header */}
-      <div className="p-8 border-b border-white/5 bg-slate-900/40 backdrop-blur-2xl sticky top-0 z-[60]">
+      <div className="p-8 border-b border-border bg-surface/40 backdrop-blur-2xl sticky top-0 z-[60]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 transition-all ${
@@ -201,11 +228,11 @@ export default function DriverPage() {
             </div>
             <div>
               <h1 className="text-xl font-black tracking-tighter uppercase leading-none">
-                Nexus<span className="text-primary">Drive</span> <span className="text-[10px] font-bold text-slate-500 ml-1">v3.2</span>
+                Nexus<span className="text-primary">Drive</span> <span className="text-[10px] font-bold text-muted ml-1">v3.2</span>
               </h1>
               <div className="flex items-center gap-2 mt-1.5">
                 <div className={`w-1.5 h-1.5 rounded-full ${shiftStatus === 'OFFLINE' ? 'bg-slate-600' : 'bg-success animate-pulse shadow-[0_0_8px_var(--success)]'}`} />
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{shiftStatus} // FREQ: 5s</p>
+                <p className="text-[9px] font-black text-muted uppercase tracking-widest">{shiftStatus} // FREQ: 5s</p>
               </div>
             </div>
           </div>
@@ -223,34 +250,34 @@ export default function DriverPage() {
       <div className="p-8 space-y-8 max-w-lg mx-auto">
         {/* Mission Status / Control */}
         {shiftStatus === 'OFFLINE' ? (
-          <div className="p-10 rounded-[3rem] bg-slate-900 border border-white/5 text-center space-y-6">
-            <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto border border-white/10 shadow-2xl">
-              <Shield size={32} className="text-slate-600" />
+          <div className="p-10 rounded-[3rem] bg-surface border border-border text-center space-y-6">
+            <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto border border-border shadow-2xl">
+              <Shield size={32} className="text-muted" />
             </div>
             <div>
-              <h2 className="text-2xl font-black uppercase tracking-tighter italic">Fleet Connection <span className="text-slate-600">Severed</span></h2>
-              <p className="text-slate-500 text-xs font-bold mt-2 uppercase tracking-widest leading-relaxed">Start your shift to begin high-frequency telemetry tracking.</p>
+              <h2 className="text-2xl font-black uppercase tracking-tighter italic">Fleet Connection <span className="text-muted">Severed</span></h2>
+              <p className="text-muted text-xs font-bold mt-2 uppercase tracking-widest leading-relaxed">Start your shift to begin high-frequency telemetry tracking.</p>
             </div>
           </div>
         ) : !activeRoute ? (
-          <div className="p-10 rounded-[3rem] bg-slate-900 border border-white/5 text-center space-y-6">
+          <div className="p-10 rounded-[3rem] bg-surface border border-border text-center space-y-6">
             <div className="w-20 h-20 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto border border-yellow-500/20 shadow-2xl">
                <Package size={32} className="text-yellow-500" />
             </div>
             <div>
               <h2 className="text-2xl font-black uppercase tracking-tighter italic">Queue <span className="text-yellow-500">Empty</span></h2>
-              <p className="text-slate-500 text-xs font-bold mt-2 uppercase tracking-widest">Base is currently optimizing new routes. Standing by...</p>
+              <p className="text-muted text-xs font-bold mt-2 uppercase tracking-widest">Base is currently optimizing new routes. Standing by...</p>
             </div>
           </div>
         ) : shiftStatus === 'ON_DUTY' ? (
-          <div className="p-10 rounded-[3rem] bg-slate-900 border border-white/5 space-y-8 shadow-2xl relative overflow-hidden group">
+          <div className="p-10 rounded-[3rem] bg-surface border border-border space-y-8 shadow-2xl relative overflow-hidden group">
             <div className="absolute -top-10 -right-10 opacity-5 group-hover:scale-125 transition-transform duration-700">
                <Truck size={200} />
             </div>
             <div className="relative z-10 text-center">
                     <span className="px-5 py-2 rounded-full bg-primary text-bg text-[10px] font-black uppercase tracking-widest">New Manifest</span>
                     <h2 className="text-4xl font-black mt-6 tracking-tight leading-none uppercase italic">Mission <span className="text-primary">Ready</span></h2>
-                    <p className="text-slate-400 font-bold mt-4 uppercase text-xs tracking-widest">{stops.length} Waypoints • {activeRoute.total_distance_km?.toFixed(1)} KM Total</p>
+                    <p className="text-muted font-bold mt-4 uppercase text-xs tracking-widest">{stops.length} Waypoints • {activeRoute.total_distance_km?.toFixed(1)} KM Total</p>
                     
                     <button 
                       onClick={handleStartMission}
@@ -269,7 +296,7 @@ export default function DriverPage() {
                </div>
                <div className="relative z-10">
                   <div className="flex justify-between items-start">
-                    <span className="px-4 py-1.5 rounded-full bg-black text-yellow-500 text-[9px] font-black uppercase tracking-widest flex items-center gap-2">
+                    <span className="px-4 py-1.5 rounded-full bg-bg text-yellow-500 text-[9px] font-black uppercase tracking-widest flex items-center gap-2">
                        <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" />
                        Navigating
                     </span>
@@ -280,10 +307,18 @@ export default function DriverPage() {
                   
                   <div className="mt-10 flex gap-3">
                      <button 
-                        onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(currentStop?.delivery_point?.address || '')}`, '_blank')}
-                        className="flex-1 h-16 bg-black text-white rounded-2xl flex items-center justify-center gap-3 font-black uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all"
+                        onClick={() => window.open(`${import.meta.env.VITE_GOOGLE_MAPS_BASE_URL}/maps/dir/?api=1&destination=${encodeURIComponent(currentStop?.delivery_point?.address || '')}`, '_blank')}
+                        className="flex-1 h-16 bg-bg text-text rounded-2xl flex items-center justify-center gap-3 font-black uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all"
                      >
                         <Map size={18} className="text-yellow-500" /> Maps
+                     </button>
+                     <button 
+                        onClick={() => setIsSimulating(!isSimulating)}
+                        className={`flex-1 h-16 rounded-2xl flex items-center justify-center gap-2 font-black uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all ${
+                          isSimulating ? 'bg-yellow-500 text-black border-2 border-black' : 'bg-surface2 text-muted border border-border'
+                        }`}
+                     >
+                        <Zap size={18} className={isSimulating ? 'fill-current' : ''} /> {isSimulating ? 'Sim Active' : 'Simulate'}
                      </button>
                      <button 
                         onClick={() => setShowPOD(true)}
@@ -302,11 +337,11 @@ export default function DriverPage() {
                    telemetryAPI.logStoppage({ vehicle_id: activeRoute.vehicle_id, lat: 0, lng: 0, reason: 'Traffic' });
                    toast.success('Hurdle reported');
                  }}
-                 className="h-16 rounded-[1.5rem] bg-slate-900 border border-white/5 flex items-center justify-center gap-3 font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-white transition-all"
+                 className="h-16 rounded-[1.5rem] bg-surface border border-border flex items-center justify-center gap-3 font-black text-[10px] uppercase tracking-widest text-muted hover:text-text transition-all"
                >
                  <AlertTriangle size={16} className="text-orange-500" /> Traffic Gap
                </button>
-               <button className="h-16 rounded-[1.5rem] bg-slate-900 border border-white/5 flex items-center justify-center gap-3 font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-white transition-all">
+               <button className="h-16 rounded-[1.5rem] bg-surface border border-border flex items-center justify-center gap-3 font-black text-[10px] uppercase tracking-widest text-muted hover:text-text transition-all">
                  <Phone size={16} className="text-sky-500" /> Support
                </button>
             </div>
@@ -316,9 +351,9 @@ export default function DriverPage() {
         {/* Detailed Manifest Queue */}
         {shiftStatus !== 'OFFLINE' && activeRoute && (
           <div className="animate-in slide-in-from-bottom duration-500">
-             <h3 className="text-[10px] font-black text-slate-600 uppercase tracking-[0.4em] mb-6 flex items-center gap-4">
+             <h3 className="text-[10px] font-black text-muted uppercase tracking-[0.4em] mb-6 flex items-center gap-4">
                 Manifest Queue
-                <div className="flex-1 h-px bg-white/5" />
+                <div className="flex-1 h-px bg-surface2" />
              </h3>
              <div className="space-y-3">
                 {stops.map((stop: any, idx: number) => {
@@ -330,24 +365,24 @@ export default function DriverPage() {
                       key={stop.id}
                       onClick={() => !isCompleted && setActiveStopId(stop.id)}
                       className={`p-6 rounded-[2rem] border transition-all cursor-pointer flex items-center justify-between ${
-                        isActive ? 'bg-slate-900 border-yellow-500/50 shadow-2xl' : 
+                        isActive ? 'bg-surface border-yellow-500/50 shadow-2xl' : 
                         isCompleted ? 'bg-emerald-500/5 border-emerald-500/10' : 
-                        'bg-slate-900/30 border-white/5'
+                        'bg-surface/30 border-border'
                       }`}
                     >
                        <div className="flex items-center gap-5">
                           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black ${
                             isActive ? 'bg-yellow-500 text-black' : 
                             isCompleted ? 'bg-emerald-500/20 text-emerald-500' : 
-                            'bg-slate-800 text-slate-500'
+                            'bg-slate-800 text-muted'
                           }`}>
                             {idx + 1}
                           </div>
                           <div>
-                             <h4 className={`text-sm font-black uppercase tracking-tight ${isCompleted ? 'text-slate-500 line-through' : 'text-white'}`}>
+                             <h4 className={`text-sm font-black uppercase tracking-tight ${isCompleted ? 'text-muted line-through' : 'text-text'}`}>
                                 {stop.delivery_point?.name}
                              </h4>
-                             <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">
+                             <p className="text-[9px] font-bold text-muted uppercase tracking-widest mt-1">
                                 {isCompleted ? 'Archived Waypoint' : 'Pending Verification'}
                              </p>
                           </div>
@@ -364,32 +399,32 @@ export default function DriverPage() {
 
       {/* POD MODAL */}
       {showPOD && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl transition-all">
-          <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-[3rem] p-10 shadow-2xl animate-in slide-in-from-bottom duration-300">
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-surface2/90 backdrop-blur-xl transition-all">
+          <div className="w-full max-w-lg bg-surface border border-border rounded-[3rem] p-10 shadow-2xl animate-in slide-in-from-bottom duration-300">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-2xl font-black uppercase tracking-tighter italic">Proof of <span className="text-yellow-500">Delivery</span></h2>
               <button 
                 onClick={() => setShowPOD(false)}
-                className="w-10 h-10 rounded-full hover:bg-white/5 flex items-center justify-center transition-colors"
+                className="w-10 h-10 rounded-full hover:bg-surface2 flex items-center justify-center transition-colors"
               >
-                <Square size={16} className="text-slate-600 rotate-45" />
+                <Square size={16} className="text-muted rotate-45" />
               </button>
             </div>
 
             <div className="space-y-8">
               <div className="space-y-3">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Recipient Proxy</label>
+                <label className="text-[10px] font-black text-muted uppercase tracking-widest px-2">Recipient Proxy</label>
                 <input 
                   type="text"
                   placeholder="Legal Name"
                   value={recipientName}
                   onChange={e => setRecipientName(e.target.value)}
-                  className="w-full h-18 bg-slate-950/50 border border-white/5 rounded-[1.5rem] px-8 text-sm focus:outline-none focus:border-yellow-500 transition-all font-black placeholder:text-slate-700 h-16"
+                  className="w-full h-18 bg-surface2/50 border border-border rounded-[1.5rem] px-8 text-sm focus:outline-none focus:border-yellow-500 transition-all font-black placeholder:text-slate-700 h-16"
                 />
               </div>
 
               <div className="space-y-3">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Biometric Signature Equivalent</label>
+                <label className="text-[10px] font-black text-muted uppercase tracking-widest px-2">Biometric Signature Equivalent</label>
                 <SignaturePad onSave={setSignature} />
               </div>
 

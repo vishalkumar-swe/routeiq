@@ -133,6 +133,71 @@ class ShipmentService:
         return shipment
 
     @staticmethod
+    async def get_public_tracking(db: AsyncSession, tracking_id: str) -> Optional[dict]:
+        """
+        Retrieves shipment, delivery point, and active vehicle telemetry for public tracking.
+        """
+        from sqlalchemy.orm import joinedload
+        from app.models.models import RouteStop, Route, Vehicle
+        
+        # 1. Fetch shipment and delivery point
+        result = await db.execute(
+            select(Shipment)
+            .options(selectinload(Shipment.delivery_point))
+            .where(Shipment.tracking_id == tracking_id)
+        )
+        shipment = result.scalar_one_or_none()
+        if not shipment:
+            return None
+        
+        tracking_info = {
+            "id": str(shipment.id),
+            "tracking_id": shipment.tracking_id,
+            "status": shipment.status,
+            "priority": shipment.priority,
+            "total_items": shipment.total_items,
+            "total_weight_kg": shipment.total_weight_kg,
+            "origin_name": shipment.origin_name,
+            "origin_address": shipment.origin_address,
+            "origin_lat": shipment.origin_lat,
+            "origin_lng": shipment.origin_lng,
+            "destination": {
+                "name": shipment.delivery_point.name if shipment.delivery_point else None,
+                "address": shipment.delivery_point.address if shipment.delivery_point else None,
+                "lat": shipment.delivery_point.latitude if shipment.delivery_point else None,
+                "lng": shipment.delivery_point.longitude if shipment.delivery_point else None,
+            } if shipment.delivery_point else None,
+            "vehicle": None,
+            "eta_minutes": None,
+        }
+        
+        # 2. Find route & vehicle if delivery point exists
+        if shipment.delivery_point:
+            # Find the route stop for this delivery point
+            route_result = await db.execute(
+                select(RouteStop)
+                .options(joinedload(RouteStop.route).joinedload(Route.vehicle))
+                .where(RouteStop.delivery_point_id == shipment.delivery_point.id)
+            )
+            route_stop = route_result.scalars().first()
+            if route_stop and route_stop.route:
+                route = route_stop.route
+                vehicle = route.vehicle
+                if vehicle:
+                    tracking_info["vehicle"] = {
+                        "plate_number": vehicle.plate_number,
+                        "type": vehicle.vehicle_type,
+                        "status": vehicle.status,
+                        "lat": vehicle.latitude,
+                        "lng": vehicle.longitude,
+                    }
+                # Calculate simple ETA from route total duration
+                if route.status == "active":
+                    tracking_info["eta_minutes"] = max(5.0, route.total_duration_minutes)
+                    
+        return tracking_info
+
+    @staticmethod
     async def get_shipment(db: AsyncSession, shipment_id: uuid.UUID) -> Optional[Shipment]:
         result = await db.execute(
             select(Shipment)

@@ -5,17 +5,18 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#D49A00', // Dark Yellow
-          dark: '#B38200',
+          DEFAULT: 'var(--accent)',
+          dark: 'var(--accent-secondary)',
         },
-        bg:       '#000000', // Pure Black
-        surface:  '#111111',
-        surface2: '#1A1A1A',
-        border:   '#333333',
-        accent:   '#E6A800',
-        success:  '#10B981',
-        error:    '#EF4444',
-        muted:    '#888888',
+        bg:       'var(--bg)',
+        surface:  'var(--surface)',
+        surface2: 'var(--surface-opaque)',
+        border:   'var(--border)',
+        accent:   'var(--accent-tertiary)',
+        success:  'var(--success)',
+        error:    'var(--error)',
+        muted:    'var(--text-muted)',
+        text:     'var(--text)',
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],

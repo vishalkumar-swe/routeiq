@@ -50,7 +50,7 @@ export default function AppLayout() {
       <div className="bg-grid opacity-20" />
 
       {/* Sidebar */}
-      <aside className="fixed left-0 top-0 bottom-0 w-[280px] bg-surface border-r border-border flex flex-col py-8 z-[100] shadow-2xl shadow-black/50">
+      <aside className="fixed left-0 top-0 bottom-0 w-[280px] bg-surface border-r border-border flex flex-col py-8 z-[100] shadow-2xl shadow-black/5">
         {/* Logo */}
         <div className="px-8 mb-12">
           <div className="flex items-center gap-4">
@@ -59,11 +59,11 @@ export default function AppLayout() {
                 <div className="text-bg font-display font-black text-2xl">RI</div>
               </div>
               <div>
-                <div className="font-display font-black text-xl text-white tracking-tight uppercase leading-tight">
+                <div className="font-display font-black text-xl text-text tracking-tight uppercase leading-tight">
                   <span className="truncate">ROUTEIQ</span>
                 </div>
                 <div className="font-display font-bold text-[9px] text-primary uppercase tracking-[0.12em]">
-                  powered by PRUDATA TECHNOLOGIES
+                  by Prudata Logistics
                 </div>
               </div>
             </div>
@@ -80,7 +80,7 @@ export default function AppLayout() {
               to={to}
               className={({ isActive }) => clsx(
                 'flex items-center gap-4 px-6 py-4 rounded-2xl text-sm transition-all relative group overflow-hidden',
-                isActive ? 'text-white font-bold bg-primary/10 shadow-sm shadow-primary/5' : 'text-muted hover:text-white hover:bg-surface2'
+                isActive ? 'text-text font-bold bg-primary/10 shadow-sm shadow-primary/5' : 'text-muted hover:text-text hover:bg-surface2'
               )}
             >
               {({ isActive }) => (

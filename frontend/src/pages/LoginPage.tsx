@@ -54,7 +54,7 @@ export default function LoginPage() {
   }
 
   const QUICK_LOGINS = [
-    { role: 'admin', icon: UserCog, email: 'admin@routeiq.io', pass: 'Admin1234!', color: 'text-white' },
+    { role: 'admin', icon: UserCog, email: 'admin@routeiq.io', pass: 'Admin1234!', color: 'text-text' },
   ]
 
   return (
@@ -68,16 +68,16 @@ export default function LoginPage() {
           <div className="inline-flex w-20 h-20 bg-primary rounded-3xl items-center justify-center shadow-[0_8px_32px_rgba(79,172,254,0.3)] rotate-3 hover:rotate-0 transition-transform duration-500">
             <Zap size={44} className="text-bg fill-current" strokeWidth={2.5} />
           </div>
-          <h1 className="font-display text-5xl font-black text-white tracking-tighter uppercase leading-none pt-4">
+          <h1 className="font-display text-5xl font-black text-text tracking-tighter uppercase leading-none pt-4">
             ROUTE<span className="text-primary">IQ</span>
           </h1>
-          <p className="text-slate-500 font-bold uppercase tracking-[0.12em] text-[9px]">
-            powered by PRUDATA TECHNOLOGIES
+          <p className="text-muted font-bold uppercase tracking-[0.12em] text-[9px]">
+            by Prudata Logistics
           </p>
         </div>
 
         {/* Login Card */}
-        <Card className="p-8 border-white/5 bg-surface/50 shadow-2xl backdrop-blur-3xl">
+        <Card className="p-8 border-border bg-surface/50 shadow-2xl backdrop-blur-3xl">
           <div className="mb-8">
              <div className="flex justify-center mb-6">
                 <GoogleLogin
@@ -90,26 +90,26 @@ export default function LoginPage() {
                 />
              </div>
              <div className="flex items-center gap-4 px-4">
-               <div className="h-px flex-1 bg-white/5" />
-               <span className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] whitespace-nowrap">Or Internal Protocol</span>
-               <div className="h-px flex-1 bg-white/5" />
+               <div className="h-px flex-1 bg-surface2" />
+               <span className="text-[9px] font-black text-muted uppercase tracking-[0.3em] whitespace-nowrap">Or Internal Protocol</span>
+               <div className="h-px flex-1 bg-surface2" />
              </div>
           </div>
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Command Control ID</label>
+              <label className="text-[10px] font-black uppercase text-muted tracking-widest ml-1">Command Control ID</label>
               <input
                 type="email"
                 placeholder="nexus.auth@prudata.io"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                className="w-full bg-surface2 border border-white/5 rounded-2xl px-5 py-4 text-white text-sm focus:outline-none focus:border-primary/50 transition-all font-bold placeholder:text-slate-600 shadow-sm"
+                className="w-full bg-surface2 border border-border rounded-2xl px-5 py-4 text-text text-sm focus:outline-none focus:border-primary/50 transition-all font-bold placeholder:text-muted shadow-sm"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Access Pass-Key</label>
+              <label className="text-[10px] font-black uppercase text-muted tracking-widest ml-1">Access Pass-Key</label>
               <div className="relative">
                 <input
                   type={showPass ? 'text' : 'password'}
@@ -117,12 +117,12 @@ export default function LoginPage() {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   required
-                  className="w-full bg-surface2 border border-white/5 rounded-2xl px-5 py-4 text-white text-sm focus:outline-none focus:border-primary/50 transition-all font-bold placeholder:text-slate-600 shadow-sm"
+                  className="w-full bg-surface2 border border-border rounded-2xl px-5 py-4 text-text text-sm focus:outline-none focus:border-primary/50 transition-all font-bold placeholder:text-muted shadow-sm"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPass(!showPass)}
-                  className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                  className="absolute right-5 top-1/2 -translate-y-1/2 text-muted hover:text-text transition-colors"
                 >
                   {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -150,7 +150,7 @@ export default function LoginPage() {
         <div className="space-y-4 pt-4">
           <div className="flex items-center gap-4 px-4">
             <div className="h-px flex-1 bg-slate-200" />
-            <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] whitespace-nowrap">Rapid Demo Access</span>
+            <span className="text-[9px] font-black text-muted uppercase tracking-[0.3em] whitespace-nowrap">Rapid Demo Access</span>
             <div className="h-px flex-1 bg-slate-200" />
           </div>
           
@@ -164,7 +164,7 @@ export default function LoginPage() {
               >
                 <Icon size={20} className={clsx("mb-2 group-hover:scale-110 transition-transform text-slate-900")} />
                 <div className="font-display font-black text-xs text-slate-900 uppercase tracking-tighter">{role}</div>
-                <div className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Quick Link</div>
+                <div className="text-[8px] font-bold text-muted uppercase tracking-widest mt-0.5">Quick Link</div>
                 <div className="absolute -right-2 -bottom-2 opacity-[0.03] rotate-12 group-hover:rotate-0 transition-transform text-slate-900">
                   <Icon size={48} />
                 </div>
@@ -175,7 +175,7 @@ export default function LoginPage() {
       </div>
 
       {/* Footer Meta */}
-      <div className="mt-12 text-[10px] font-bold text-slate-400 uppercase tracking-[0.5em] animate-pulse">
+      <div className="mt-12 text-[10px] font-bold text-muted uppercase tracking-[0.5em] animate-pulse">
          Core v1.0 // Intelligence Grid Active
       </div>
     </div>

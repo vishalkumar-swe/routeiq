@@ -34,6 +34,19 @@ async def read_shipments(
     """
     return await ShipmentService.list_shipments(db, skip=skip, limit=limit)
 
+@router.get("/track/{tracking_id}")
+async def public_track_shipment(
+    tracking_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Publicly track a shipment by its tracking_id (no auth required).
+    """
+    info = await ShipmentService.get_public_tracking(db, tracking_id)
+    if not info:
+        raise HTTPException(status_code=404, detail="Shipment with this tracking ID not found")
+    return info
+
 @router.get("/{shipment_id}", response_model=ShipmentResponse)
 async def read_shipment(
     shipment_id: uuid.UUID,

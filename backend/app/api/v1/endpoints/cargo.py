@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role
-from app.models.models import Vehicle, Shipment
+from app.models.models import Vehicle, Shipment, MaintenanceAlert
 from app.schemas.schemas import TokenData
 
 router = APIRouter()
@@ -116,38 +116,16 @@ SCENARIOS = {
 }
 
 # Live active alerts list in-memory to simulate dynamic changes
-ALERT_FEED = [
-    {
-        "id": "alert-1",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "plate_number": "HR-55B-9022",
-        "type": "geo_fence_breach",
-        "severity": "high",
-        "message": "Route deviation detected: Left optimized corridor NH-48 near Vadodara by 4.2 km.",
-        "cargo_id": "SH-78921",
-        "status": "active"
-    },
-    {
-        "id": "alert-2",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "plate_number": "MH-12Q-4491",
-        "type": "tamper_detected",
-        "severity": "critical",
-        "message": "Smart lock seal integrity compromised on rear bay doors at coordinate (19.0760, 72.8777).",
-        "cargo_id": "SH-30419",
-        "status": "active"
-    },
-    {
-        "id": "alert-3",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "plate_number": "KA-03M-7001",
-        "type": "temp_fluctuation",
-        "severity": "medium",
-        "message": "Chamber sensor #2 reported 7.4°C (Target: 2.0°C - 4.0°C for pharma cargo).",
-        "cargo_id": "SH-11082",
-        "status": "resolved"
-    }
-]
+// NOTE: In-memory ALERT_FEED removed; using DB-backed MaintenanceAlert model.
+
+@router.get("/shipments")
+async def get_shipments(
+    db: AsyncSession = Depends(get_db),
+    token: TokenData = Depends(get_current_user)
+):
+    """Retrieve all shipments from the database."""
+    result = await db.execute(select(Shipment))
+    return result.scalars().all()
 
 @router.get("/scenarios")
 async def get_cargo_scenarios(
@@ -158,45 +136,80 @@ async def get_cargo_scenarios(
 
 @router.get("/security-alerts")
 async def get_security_alerts(
+    db: AsyncSession = Depends(get_db),
     token: TokenData = Depends(get_current_user)
 ):
-    """Fetch live security monitoring and tamper detection events."""
-    return ALERT_FEED
+    """Fetch live security alerts from the database (unresolved)."""
+    result = await db.execute(select(MaintenanceAlert).where(MaintenanceAlert.is_resolved == False))
+    alerts = result.scalars().all()
+    # Convert to dicts for response
+    return [
+        {
+            "id": str(alert.id),
+            "timestamp": alert.created_at.isoformat() if alert.created_at else None,
+            "vehicle_id": str(alert.vehicle_id),
+            "type": alert.alert_type,
+            "severity": alert.severity,
+            "message": alert.description,
+            "status": "resolved" if alert.is_resolved else "active",
+        }
+        for alert in alerts
+    ]
 
 @router.post("/trigger-alert")
 async def trigger_simulated_alert(
+    db: AsyncSession = Depends(get_db),
     payload: Dict[str, Any] = Body(...),
     token: TokenData = Depends(require_role("admin", "superadmin", "manager"))
 ):
-    """Trigger a simulated geo-fence or lock tamper event."""
+    """Create a simulated security alert record in the database."""
     alert_type = payload.get("type", "tamper_detected")
     plate_number = payload.get("plate_number", "DL-1GC-4922")
     message = payload.get("message", "Simulated security alert triggered by operator.")
-    
-    new_alert = {
-        "id": f"alert-{uuid.uuid4().hex[:6]}",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+    severity = "critical" if alert_type == "tamper_detected" else "high"
+    cargo_id = f"SH-{random.randint(10000, 99999)}"
+    # Create MaintenanceAlert instance
+    new_alert = MaintenanceAlert(
+        vehicle_id=uuid.uuid4(),  # Placeholder; in real app associate vehicle
+        alert_type=alert_type,
+        severity=severity,
+        description=message,
+        is_resolved=False,
+    )
+    # Optional: store additional fields as JSON or using extra columns if defined
+    db.add(new_alert)
+    await db.commit()
+    await db.refresh(new_alert)
+    return {"status": "success", "alert": {
+        "id": str(new_alert.id),
+        "timestamp": new_alert.created_at.isoformat() if new_alert.created_at else None,
         "plate_number": plate_number,
         "type": alert_type,
-        "severity": "critical" if alert_type == "tamper_detected" else "high",
+        "severity": severity,
         "message": message,
-        "cargo_id": f"SH-{random.randint(10000, 99999)}",
-        "status": "active"
-    }
-    ALERT_FEED.insert(0, new_alert)
-    return {"status": "success", "alert": new_alert}
+        "cargo_id": cargo_id,
+        "status": "active",
+    }}
 
 @router.post("/resolve-alert/{alert_id}")
 async def resolve_simulated_alert(
+    db: AsyncSession = Depends(get_db),
     alert_id: str,
     token: TokenData = Depends(require_role("admin", "superadmin", "manager"))
 ):
-    """Mark a simulated alert as resolved."""
-    for alert in ALERT_FEED:
-        if alert["id"] == alert_id:
-            alert["status"] = "resolved"
-            return {"status": "success", "alert": alert}
-    raise HTTPException(status_code=404, detail="Alert not found")
+    """Mark a security alert as resolved in the database."""
+    result = await db.execute(select(MaintenanceAlert).where(MaintenanceAlert.id == alert_id))
+    alert = result.scalar_one_or_none()
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    alert.is_resolved = True
+    alert.resolved_at = datetime.now(timezone.utc)
+    await db.commit()
+    return {"status": "success", "alert": {
+        "id": str(alert.id),
+        "status": "resolved",
+        "resolved_at": alert.resolved_at.isoformat()
+    }}
 
 @router.post("/optimize-pooling")
 async def optimize_pooling(
