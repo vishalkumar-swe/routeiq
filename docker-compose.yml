@@ -72,6 +72,31 @@ services:
       timeout: 10s
       retries: 3
 
+  telemetry:
+    build:
+      context: ./telemetry-service
+      dockerfile: Dockerfile
+    container_name: routeiq_telemetry
+    restart: unless-stopped
+    ports:
+      - "8003:8002"
+    environment:
+      PORT: 8002
+      DATABASE_URL: postgresql://routeiq:routeiq_pass@db:5432/routeiq
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: 6692a21c0546dd3f374ea4cfe562bb0e41556e5188
+      BACKEND_API_URL: http://backend:8000
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./telemetry-service:/app
+      - /app/node_modules
+    command: npm run dev
+
+
   # ─────────────────────────────────────────────
   # Celery Worker
   # ─────────────────────────────────────────────

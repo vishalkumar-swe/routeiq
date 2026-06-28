@@ -1,13 +1,14 @@
-import { 
-  Plus, Search, Package, MapPin, Layers, 
+import {
+  Plus, Search, Package, MapPin, Layers,
   ShieldCheck, ShieldAlert, Zap, Navigation, Loader2,
-  Calendar, Clock, AlertTriangle, Thermometer
+  Calendar, Clock, AlertTriangle, Thermometer, Smartphone, Copy, MessageCircle, CheckCircle
 } from 'lucide-react'
 import axios from 'axios'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 
-import { shipmentsAPI, deliveryPointsAPI } from '@/services/api'
+import { shipmentsAPI, deliveryPointsAPI, telemetryAPI, vehiclesAPI } from '@/services/api'
 import { Card, StatusDot, Button, Badge } from '@/components/ui'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
@@ -24,9 +25,12 @@ const CARGO_ARCHETYPES = [
 
 export default function ShipmentsPage() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingShipment, setEditingShipment] = useState<any>(null)
+  const [confirmDeleteShipmentId, setConfirmDeleteShipmentId] = useState<string | null>(null)
 
   const { data: shipments = [], isLoading } = useQuery({
     queryKey: ['shipments'],
@@ -41,10 +45,34 @@ export default function ShipmentsPage() {
     },
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => shipmentsAPI.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['shipments'] })
+      toast.success('Shipment deleted successfully')
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.detail || error?.message || 'Failed to delete shipment'
+      toast.error(typeof msg === 'string' ? msg : JSON.stringify(msg))
+    }
+  })
+
+  const [neuralPipelineStep, setNeuralPipelineStep] = useState<number | null>(null)
+  const [createdShipmentData, setCreatedShipmentData] = useState<any>(null)
+
+  useEffect(() => {
+    if (neuralPipelineStep !== null && neuralPipelineStep < 4) {
+      const timer = setTimeout(() => {
+        setNeuralPipelineStep(prev => prev !== null ? prev + 1 : null)
+      }, 2200)
+      return () => clearTimeout(timer)
+    }
+  }, [neuralPipelineStep])
+
   const filtered = shipments.filter((s: any) => {
     const matchesFilter = filter === 'all' || s.status === filter
     const matchesSearch = s.tracking_id.toLowerCase().includes(search.toLowerCase()) ||
-                         s.delivery_point?.name?.toLowerCase().includes(search.toLowerCase())
+      s.delivery_point?.name?.toLowerCase().includes(search.toLowerCase())
     return matchesFilter && matchesSearch
   })
 
@@ -52,8 +80,8 @@ export default function ShipmentsPage() {
     <div className="space-y-8 pb-12">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
         <div>
-          <h1 className="text-6xl font-black text-text font-display tracking-tighter uppercase leading-none mb-4">
-            Cargo <span className="text-primary">Manifest</span>
+          <h1 className="text-5xl font-black text-text font-display tracking-tight uppercase leading-none mb-2">
+            Cargo Manifest (Updated)
           </h1>
           <p className="text-muted font-bold text-lg tracking-tight">
             Managing <span className="text-text">{shipments.length}</span> active shipments across the global logistics grid.
@@ -100,110 +128,308 @@ export default function ShipmentsPage() {
           </div>
         ) : shipments.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-20 text-center bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
-             <Package className="text-muted mb-6" size={64} />
-             <h3 className="text-xl font-bold text-slate-900 mb-2 uppercase tracking-tighter">No Active Neural Loads</h3>
-             <p className="text-sm text-muted max-w-xs font-bold leading-relaxed">Initialize your first shipment tracking vector to begin logistics optimization.</p>
+            <Package className="text-muted mb-6" size={64} />
+            <h3 className="text-xl font-bold text-slate-900 mb-2 uppercase tracking-tighter">No Active Neural Loads</h3>
+            <p className="text-sm text-muted max-w-xs font-bold leading-relaxed">Initialize your first shipment tracking vector to begin logistics optimization.</p>
           </div>
         ) : (
           filtered.map((s: any) => (
             <Card key={s.id} className="relative group transition-all hover:scale-[1.01] hover:shadow-2xl border border-border p-0 overflow-visible mb-8 bg-surface shadow-2xl rounded-[2.5rem]">
-               <div className="grid grid-cols-1 lg:grid-cols-4 items-center">
-                  
-                  {/* Column 1: Tracking Vector */}
-                  <div className="p-10 border-r border-border h-full flex flex-col justify-center">
-                     <div className="flex items-center gap-3 mb-6">
-                        <div className="text-[10px] font-black text-muted uppercase tracking-[0.2em]">Tracking ID</div>
-                        <Badge variant="green" className="bg-success/10 text-success border-none rounded-full px-3 py-1 text-[8px] font-black uppercase tracking-widest whitespace-nowrap">
-                           <ShieldCheck size={10} className="inline mr-1 mb-0.5" /> SECURE
-                        </Badge>
-                     </div>
-                     <h3 className="text-3xl font-black text-primary font-mono tracking-tight leading-none mb-6">{s.tracking_id}</h3>
-                     <div className="bg-surface2 text-text px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest inline-block w-fit border border-border">
-                        {s.priority} priority
-                     </div>
+              <div className="grid grid-cols-1 lg:grid-cols-4 items-center">
+
+                {/* Column 1: Tracking Vector */}
+                <div className="p-10 border-r border-border h-full flex flex-col justify-center">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="text-[10px] font-black text-muted uppercase tracking-[0.2em]">Tracking ID</div>
+                    <Badge variant="green" className="bg-success/10 text-success border-none rounded-full px-3 py-1 text-[8px] font-black uppercase tracking-widest whitespace-nowrap">
+                      <ShieldCheck size={10} className="inline mr-1 mb-0.5" /> SECURE
+                    </Badge>
+                  </div>
+                  <h3 className="text-3xl font-black text-primary font-mono tracking-tight leading-none mb-6">{s.tracking_id}</h3>
+                  <div className="bg-surface2 text-text px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest inline-block w-fit border border-border">
+                    {s.priority} priority
+                  </div>
+                </div>
+
+                {/* Column 2: Journey Logistics */}
+                <div className="col-span-1 lg:col-span-1 p-10 border-r border-border flex flex-col gap-8">
+                  <div className="space-y-2">
+                    <div className="text-[8px] font-black text-muted uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(79,172,254,0.6)]" /> Departure
+                    </div>
+                    <div className="text-lg font-black text-text leading-tight">{s.origin_name || 'Fleet Hub Alpha'}</div>
+                    <div className="text-[10px] font-bold text-muted uppercase truncate max-w-[200px] tracking-tight">{s.origin_address || 'Sector V, Salt Lake City, Kolkata'}</div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-[8px] font-black text-muted uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_rgba(249,201,53,0.6)]" /> Destination
+                    </div>
+                    <div className="text-lg font-black text-text leading-tight">{s.delivery_point?.name || 'Local Distribution'}</div>
+                    <div className="text-[10px] font-bold text-muted uppercase truncate max-w-[200px] tracking-tight">{s.delivery_point?.address || 'Street 104, New Delhi'}</div>
+                  </div>
+                </div>
+
+                {/* Column 3: Cargo Payload */}
+                <div className="p-10 border-r border-border h-full flex flex-col justify-center">
+                  <div className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-6">Cargo Payload</div>
+                  <div className="flex items-center gap-5">
+                    <div className="w-16 h-16 rounded-2xl bg-surface2 flex items-center justify-center border border-border group-hover:bg-bg transition-colors shadow-lg">
+                      <Layers className="text-primary" size={24} />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-black text-text leading-none mb-2">{s.total_items} Items</div>
+                      <div className="text-[10px] font-bold text-muted uppercase tracking-widest">Total: {s.total_weight_kg} KG</div>
+                    </div>
+                  </div>
+                  <div className="mt-6 flex flex-col items-start gap-3">
+                    <button onClick={(e) => { e.stopPropagation(); navigate('/track/' + s.tracking_id) }} className="flex items-center gap-2 text-[10px] font-black uppercase text-primary hover:text-text transition-colors tracking-widest" title="Navigate Details">
+                      <Navigation size={14} className="text-primary" /> Details
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); setEditingShipment(s) }} className="flex items-center gap-2 text-[10px] font-black uppercase text-muted hover:text-text transition-colors tracking-widest" title="Edit">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg> Edit
+                    </button>
+                    <button onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmDeleteShipmentId(s.id);
+                    }} className="flex items-center gap-2 text-[10px] font-black uppercase text-red-500 hover:text-red-400 transition-colors tracking-widest" title="Delete" disabled={deleteMutation.isPending}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Delete
+                    </button>
+                  </div>
+                </div>
+
+                {/* Column 4: Status Intelligence */}
+                <div className="p-10 h-full flex flex-col justify-center bg-surface2/30">
+                  <div className="flex items-center justify-between mb-10">
+                    <div className="text-[10px] font-black text-muted uppercase tracking-[0.2em]">Status</div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shadow-[0_0_10px_rgba(79,172,254,0.8)]" />
+                      <span className="text-xs font-black text-text uppercase tracking-tighter">{s.status.replace(/_/g, ' ')}</span>
+                    </div>
                   </div>
 
-                  {/* Column 2: Journey Logistics */}
-                  <div className="col-span-1 lg:col-span-1 p-10 border-r border-border flex flex-col gap-8">
-                     <div className="space-y-2">
-                        <div className="text-[8px] font-black text-muted uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
-                           <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(79,172,254,0.6)]" /> Departure
-                        </div>
-                        <div className="text-lg font-black text-text leading-tight">{s.origin_name || 'Fleet Hub Alpha'}</div>
-                        <div className="text-[10px] font-bold text-muted uppercase truncate max-w-[200px] tracking-tight">{s.origin_address || 'Sector V, Salt Lake City, Kolkata'}</div>
-                     </div>
-                     <div className="space-y-2">
-                        <div className="text-[8px] font-black text-muted uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
-                           <div className="w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_rgba(249,201,53,0.6)]" /> Destination
-                        </div>
-                        <div className="text-lg font-black text-text leading-tight">{s.delivery_point?.name || 'Local Distribution'}</div>
-                        <div className="text-[10px] font-bold text-muted uppercase truncate max-w-[200px] tracking-tight">{s.delivery_point?.address || 'Street 104, New Delhi'}</div>
-                     </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    {['picked_up', 'in_transit', 'delivered'].map(st => (
+                      <button
+                        key={st}
+                        onClick={(e) => { e.stopPropagation(); statusMutation.mutate({ id: s.id, status: st }) }}
+                        disabled={s.status === st || statusMutation.isPending}
+                        className={clsx(
+                          "h-12 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border",
+                          s.status === st
+                            ? "bg-primary text-bg border-primary shadow-lg shadow-primary/20"
+                            : "bg-surface/50 text-muted border-border hover:border-primary/40 hover:text-text"
+                        )}
+                      >
+                        {st.replace(/_/g, ' ')}
+                      </button>
+                    ))}
                   </div>
+                </div>
 
-                  {/* Column 3: Cargo Payload */}
-                  <div className="p-10 border-r border-border h-full flex flex-col justify-center">
-                     <div className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-6">Cargo Payload</div>
-                     <div className="flex items-center gap-5">
-                        <div className="w-16 h-16 rounded-2xl bg-surface2 flex items-center justify-center border border-border group-hover:bg-bg transition-colors shadow-lg">
-                           <Layers className="text-primary" size={24} />
-                        </div>
-                        <div>
-                           <div className="text-2xl font-black text-text leading-none mb-2">{s.total_items} Items</div>
-                           <div className="text-[10px] font-bold text-muted uppercase tracking-widest">Total: {s.total_weight_kg} KG</div>
-                        </div>
-                     </div>
-                     <button className="mt-8 flex items-center gap-2 text-[10px] font-black uppercase text-primary hover:text-text transition-colors tracking-widest">
-                        <Navigation size={14} className="text-primary" /> View Intelligence Grid
-                     </button>
-                  </div>
-
-                  {/* Column 4: Status Intelligence */}
-                  <div className="p-10 h-full flex flex-col justify-center bg-surface2/30">
-                     <div className="flex items-center justify-between mb-10">
-                        <div className="text-[10px] font-black text-muted uppercase tracking-[0.2em]">Status</div>
-                        <div className="flex items-center gap-3">
-                           <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shadow-[0_0_10px_rgba(79,172,254,0.8)]" />
-                           <span className="text-xs font-black text-text uppercase tracking-tighter">{s.status.replace('_', ' ')}</span>
-                        </div>
-                     </div>
-                     
-                     <div className="grid grid-cols-1 gap-2">
-                        {['picked_up', 'in_transit', 'delivered'].map(st => (
-                          <button
-                            key={st}
-                            onClick={() => statusMutation.mutate({ id: s.id, status: st })}
-                            disabled={s.status === st || statusMutation.isPending}
-                            className={clsx(
-                              "h-12 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border",
-                              s.status === st 
-                                ? "bg-primary text-bg border-primary shadow-lg shadow-primary/20" 
-                                : "bg-surface/50 text-muted border-border hover:border-primary/40 hover:text-text"
-                            )}
-                          >
-                            {st.replace('_', ' ')}
-                          </button>
-                        ))}
-                     </div>
-                  </div>
-
-               </div>
+              </div>
             </Card>
           ))
         )}
       </div>
 
-      <AddShipmentModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <AddShipmentModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={(data) => {
+          setCreatedShipmentData(data)
+          setNeuralPipelineStep(1)
+        }}
+      />
+      <EditShipmentModal shipment={editingShipment} isOpen={!!editingShipment} onClose={() => setEditingShipment(null)} />
+
+      {/* Sleek and Compact AI Neural Routing Pipeline Overlay */}
+      {neuralPipelineStep !== null && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md border border-slate-200 p-6 bg-white text-slate-900 shadow-[0_20px_50px_rgba(15,23,42,0.15)] rounded-[2rem] relative overflow-hidden">
+            
+            {/* Soft subtle background glow */}
+            <div className="absolute top-0 right-0 w-24 h-24 bg-yellow-500/5 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
+
+            <div className="space-y-5 relative z-10">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-yellow-400 flex items-center justify-center text-slate-950 shadow-md shadow-yellow-500/10">
+                    <Zap size={18} className="fill-current animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black uppercase tracking-tight text-slate-950 leading-none">Neural Route Pipeline</h3>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Autonomous Dispatch Grid</p>
+                  </div>
+                </div>
+                <Badge variant="orange" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 text-[8px] px-2 py-0.5">
+                  {neuralPipelineStep < 4 ? 'OPTIMIZING' : 'SOLVED'}
+                </Badge>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-[8px] font-black uppercase text-slate-400 tracking-widest">
+                  <span>Engine Solver Progress</span>
+                  <span>{Math.round((neuralPipelineStep / 4) * 100)}%</span>
+                </div>
+                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-300 rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${(neuralPipelineStep / 4) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Pipeline Steps */}
+              <div className="space-y-2">
+                {[
+                  {
+                    step: 1,
+                    title: '1. Neural Routing Solver',
+                    desc: 'Sending dispatch vector to Neural Solver models to calculate optimal paths...',
+                    icon: <Layers size={14} />
+                  },
+                  {
+                    step: 2,
+                    title: '2. Route Grid Optimization',
+                    desc: 'Finalizing stop sequence, total distance, weather conditions, and travel times...',
+                    icon: <Navigation size={14} />
+                  },
+                  {
+                    step: 3,
+                    title: '3. Driver Interface Dispatch',
+                    desc: 'Broadcasting telemetry sequence to mobile driver console & marking route active...',
+                    icon: <Smartphone size={14} />
+                  },
+                  {
+                    step: 4,
+                    title: '4. AI Intel Dashboard Sync',
+                    desc: 'Updating travel analytics metrics, fuel conservation levels, and dashboard KPIs...',
+                    icon: <CheckCircle size={14} />
+                  }
+                ].map(({ step, title, desc, icon }) => {
+                  const isDone = neuralPipelineStep > step || neuralPipelineStep === 4;
+                  const isActive = neuralPipelineStep === step;
+                  return (
+                    <div 
+                      key={step} 
+                      className={clsx(
+                        "flex gap-3 p-2.5 rounded-xl border transition-all duration-200",
+                        isDone ? "bg-emerald-50/40 border-emerald-100 text-slate-800" :
+                        isActive ? "bg-yellow-50/50 border-yellow-250 text-slate-950 shadow-sm" :
+                        "bg-slate-50/40 border-slate-100 text-slate-400 opacity-60"
+                      )}
+                    >
+                      <div className={clsx(
+                        "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all",
+                        isDone ? "bg-emerald-500 text-white" :
+                        isActive ? "bg-yellow-400 text-slate-950 animate-pulse font-bold" :
+                        "bg-slate-200 text-slate-500"
+                      )}>
+                        {isDone ? (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                        ) : icon}
+                      </div>
+                      <div className="space-y-0.5">
+                        <div className={clsx("text-[10px] font-black uppercase tracking-wide", isActive ? "text-slate-900" : isDone ? "text-slate-800" : "text-slate-500")}>{title}</div>
+                        <div className={clsx("text-[9px] font-medium leading-tight", isActive ? "text-slate-600" : "text-slate-400")}>{desc}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Action shortcuts when finished */}
+              {neuralPipelineStep === 4 && (
+                <div className="pt-3 border-t border-slate-100 space-y-3 animate-in slide-in-from-bottom-2 duration-300">
+                  <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">
+                    Navigate to Updated Platform Sectors
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={() => { setNeuralPipelineStep(null); navigate('/routes'); }}
+                      className="h-10 bg-slate-50 hover:bg-slate-100 border border-slate-250 text-slate-800 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                    >
+                      🚚 Route Grid
+                    </button>
+                    <button 
+                      onClick={() => { setNeuralPipelineStep(null); navigate('/driver'); }}
+                      className="h-10 bg-slate-50 hover:bg-slate-100 border border-slate-250 text-slate-800 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                    >
+                      📱 Driver Console
+                    </button>
+                    <button 
+                      onClick={() => { setNeuralPipelineStep(null); navigate('/ai-hub'); }}
+                      className="h-10 bg-slate-50 hover:bg-slate-100 border border-slate-250 text-slate-800 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                    >
+                      🧠 AI Intel Hub
+                    </button>
+                    <button 
+                      onClick={() => { setNeuralPipelineStep(null); navigate('/dashboard'); }}
+                      className="h-10 bg-slate-50 hover:bg-slate-100 border border-slate-250 text-slate-800 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                    >
+                      📊 Dashboard
+                    </button>
+                  </div>
+                  <button 
+                    onClick={() => setNeuralPipelineStep(null)}
+                    className="w-full h-10 bg-yellow-450 hover:bg-yellow-400 text-slate-950 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-sm active:scale-95"
+                  >
+                    Done & Return
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Delete Confirmation Modal */}
+      {confirmDeleteShipmentId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg/85 backdrop-blur-md animate-fade-in">
+          <Card className="w-full max-w-md border border-border p-8 bg-surface shadow-2xl relative">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center mx-auto text-red-500">
+                <AlertTriangle size={32} />
+              </div>
+              <h3 className="text-2xl font-black text-text uppercase tracking-tight">Confirm Deletion</h3>
+              <p className="text-muted font-bold text-sm leading-relaxed">
+                Are you sure you want to delete shipment <span className="text-red-500 font-mono">{shipments.find((s: any) => s.id === confirmDeleteShipmentId)?.tracking_id}</span>? This action is permanent and cannot be undone.
+              </p>
+              <div className="flex gap-4 pt-4">
+                <Button 
+                  onClick={() => setConfirmDeleteShipmentId(null)}
+                  className="flex-1 py-4 border-slate-200"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  variant="danger"
+                  onClick={() => {
+                    deleteMutation.mutate(confirmDeleteShipmentId)
+                    setConfirmDeleteShipmentId(null)
+                  }}
+                  className="flex-1 py-4 bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500/20 font-black uppercase tracking-widest"
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
 
-function AddShipmentModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function AddShipmentModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClose: () => void; onSuccess?: (data: any) => void }) {
   const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState('')
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [isSearching, setIsSearching] = useState(false)
-  
+
   const [formData, setFormData] = useState({
     tracking_id: `RTX-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
     origin_id: '',
@@ -221,6 +447,7 @@ function AddShipmentModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
     total_items: 1,
     total_weight_kg: 5.0,
     plan_for_later: false,
+    enable_mobile_gps: false,
     scheduled_date: '',
     scheduled_time: ''
   })
@@ -229,6 +456,46 @@ function AddShipmentModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   const [originSearch, setOriginSearch] = useState('')
   const [originSuggestions, setOriginSuggestions] = useState<any[]>([])
   const [isSearchingOrigin, setIsSearchingOrigin] = useState(false)
+
+  // Mobile GPS state
+  const [mobilePhone, setMobilePhone] = useState('')
+  const [selectedVehicleId, setSelectedVehicleId] = useState('')
+  const [mobileLink, setMobileLink] = useState('')
+  const [linkCopied, setLinkCopied] = useState(false)
+  const [generatingLink, setGeneratingLink] = useState(false)
+
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ['vehicles'],
+    queryFn: () => vehiclesAPI.list(),
+    enabled: formData.enable_mobile_gps,
+  })
+
+  const generateMobileLink = async () => {
+    if (!selectedVehicleId) { toast.error('Select a vehicle first'); return }
+    setGeneratingLink(true)
+    try {
+      const result = await telemetryAPI.createMobileSession(selectedVehicleId, mobilePhone)
+      const url = `${window.location.origin}/m/${result.token}`
+      setMobileLink(url)
+      toast.success(`Tracking link generated for ${result.plate}`)
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail || 'Failed to generate link')
+    } finally {
+      setGeneratingLink(false)
+    }
+  }
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(mobileLink)
+    setLinkCopied(true)
+    toast.success('Link copied!')
+    setTimeout(() => setLinkCopied(false), 2000)
+  }
+
+  const shareWhatsApp = () => {
+    const msg = encodeURIComponent(`📍 RouteIQ GPS Tracking Link\nVehicle tracking is live. Open this link on your phone to start sharing location:\n${mobileLink}`)
+    window.open(`https://wa.me/${mobilePhone.replace(/\D/g, '')}?text=${msg}`, '_blank')
+  }
 
   useEffect(() => {
     const searchMapbox = async (query: string, setter: (val: any[]) => void, loadingSetter: (val: boolean) => void) => {
@@ -239,17 +506,18 @@ function AddShipmentModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
       loadingSetter(true)
       try {
         const token = import.meta.env.VITE_MAPBOX_TOKEN
-      const resp = await axios.get(
-        `${import.meta.env.VITE_MAPBOX_GEOCODING_URL}/${encodeURIComponent(query)}.json`,
-        {
-          params: {
-            access_token: token,
-            country: 'IN',
-            limit: 5,
-            types: 'place,locality,address'
+        const geocodingBase = import.meta.env.VITE_MAPBOX_GEOCODING_URL || 'https://api.mapbox.com/geocoding/v5/mapbox.places'
+        const resp = await axios.get(
+          `${geocodingBase}/${encodeURIComponent(query)}.json`,
+          {
+            params: {
+              access_token: token,
+              country: 'IN',
+              limit: 5,
+              types: 'place,locality,address'
+            }
           }
-        }
-      )
+        )
         setter(resp.data.features || [])
       } catch (err) {
         console.error('Search failed', err)
@@ -260,7 +528,7 @@ function AddShipmentModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 
     const timerDest = setTimeout(() => searchMapbox(searchTerm, setSuggestions, setIsSearching), 500)
     const timerOrigin = setTimeout(() => searchMapbox(originSearch, setOriginSuggestions, setIsSearchingOrigin), 500)
-    
+
     return () => {
       clearTimeout(timerDest)
       clearTimeout(timerOrigin)
@@ -283,14 +551,23 @@ function AddShipmentModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         total_items: Number(data.total_items),
         total_weight_kg: Number(data.total_weight_kg),
         priority: data.priority,
+        enable_mobile_gps: data.enable_mobile_gps,
         parcels: [] // Backend handles summary
       }
       return shipmentsAPI.create(payload)
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['shipments'] })
       toast.success('Shipment successfully initialized')
       onClose()
+      if (onSuccess) {
+        onSuccess(data)
+      }
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.detail || error?.message || 'Failed to create shipment'
+      toast.error(typeof msg === 'string' ? msg : JSON.stringify(msg))
+      console.error('Shipment create error:', error?.response?.data || error)
     }
   })
 
@@ -299,45 +576,45 @@ function AddShipmentModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 backdrop-blur-2xl bg-surface2/40 animate-in fade-in duration-500">
       <div className="bg-white rounded-[3rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] border border-white/20 animate-in zoom-in-95 duration-500 scrollbar-none">
-        
+
         {/* Header with Visual Treatment */}
         <div className="relative p-10 bg-surface overflow-hidden">
-           <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/20 to-transparent pointer-events-none" />
-           <div className="relative z-10">
-             <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-2xl bg-yellow-500 flex items-center justify-center shadow-lg shadow-yellow-500/20">
-                   <Package className="text-slate-900" size={20} />
-                </div>
-                <Badge variant="orange" className="h-6">LIVE NEURAL GRID</Badge>
-             </div>
-             <h2 className="text-4xl font-black text-text font-display tracking-tight uppercase leading-none mb-2">Request Shipment</h2>
-             <p className="text-muted font-bold text-sm tracking-tight">Deploying cargo onto the active pan-India logistics network.</p>
-           </div>
-           
-           {/* Decorative Illustration (Abstract Map Element) */}
-           <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-yellow-500/10 rounded-full blur-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/20 to-transparent pointer-events-none" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-2xl bg-yellow-500 flex items-center justify-center shadow-lg shadow-yellow-500/20">
+                <Package className="text-slate-900" size={20} />
+              </div>
+              <Badge variant="orange" className="h-6">LIVE NEURAL GRID</Badge>
+            </div>
+            <h2 className="text-4xl font-black text-text font-display tracking-tight uppercase leading-none mb-2">Request Shipment</h2>
+            <p className="text-muted font-bold text-sm tracking-tight">Deploying cargo onto the active pan-India logistics network.</p>
+          </div>
+
+          {/* Decorative Illustration (Abstract Map Element) */}
+          <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-yellow-500/10 rounded-full blur-3xl" />
         </div>
 
         <div className="p-10 space-y-10">
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Origin Search */}
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-2">
-                 <label className="text-[10px] font-black text-muted uppercase tracking-widest pl-1 flex items-center gap-2">
-                   <Navigation size={12} className="text-blue-500" /> Departure Point
-                 </label>
+                <label className="text-[10px] font-black text-muted uppercase tracking-widest pl-1 flex items-center gap-2">
+                  <Navigation size={12} className="text-blue-500" /> Departure Point
+                </label>
               </div>
               <div className="relative group">
                 <div className="absolute left-6 top-1/2 -translate-y-1/2 text-muted">
                   {isSearchingOrigin ? <Loader2 size={18} className="animate-spin text-blue-500" /> : <MapPin size={18} />}
                 </div>
-                <input 
+                <input
                   placeholder="Where is the pickup?"
                   value={originSearch || formData.origin_name}
                   onChange={(e) => {
                     setOriginSearch(e.target.value)
-                    if (formData.origin_name) setFormData({...formData, origin_name: '', origin_address: ''})
+                    if (formData.origin_name) setFormData({ ...formData, origin_name: '', origin_address: '' })
                   }}
                   className="w-full h-14 pl-14 pr-6 bg-slate-50 border-2 border-transparent rounded-2xl text-slate-900 font-bold placeholder:text-muted focus:bg-white focus:border-blue-500/30 transition-all outline-none text-sm"
                 />
@@ -348,7 +625,7 @@ function AddShipmentModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                         key={p.id}
                         onClick={() => {
                           setFormData({
-                            ...formData, 
+                            ...formData,
                             origin_name: p.text,
                             origin_address: p.place_name,
                             origin_lat: p.center[1],
@@ -371,20 +648,20 @@ function AddShipmentModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             {/* Destination Search */}
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-2">
-                 <label className="text-[10px] font-black text-muted uppercase tracking-widest pl-1 flex items-center gap-2">
-                   <MapPin size={12} className="text-yellow-500" /> Goal Destination
-                 </label>
+                <label className="text-[10px] font-black text-muted uppercase tracking-widest pl-1 flex items-center gap-2">
+                  <MapPin size={12} className="text-yellow-500" /> Goal Destination
+                </label>
               </div>
               <div className="relative group">
                 <div className="absolute left-6 top-1/2 -translate-y-1/2 text-muted">
                   {isSearching ? <Loader2 size={18} className="animate-spin text-yellow-500" /> : <Search size={18} />}
                 </div>
-                <input 
+                <input
                   placeholder="Final drop destination?"
                   value={searchTerm || formData.delivery_point_name}
                   onChange={(e) => {
                     setSearchTerm(e.target.value)
-                    if (formData.delivery_point_name) setFormData({...formData, delivery_point_name: '', delivery_point_id: ''})
+                    if (formData.delivery_point_name) setFormData({ ...formData, delivery_point_name: '', delivery_point_id: '' })
                   }}
                   className="w-full h-14 pl-14 pr-6 bg-slate-50 border-2 border-transparent rounded-2xl text-slate-900 font-bold placeholder:text-muted focus:bg-white focus:border-yellow-500/30 transition-all outline-none text-sm"
                 />
@@ -395,8 +672,8 @@ function AddShipmentModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                         key={p.id}
                         onClick={() => {
                           setFormData({
-                            ...formData, 
-                            delivery_point_id: p.id, 
+                            ...formData,
+                            delivery_point_id: p.id,
                             delivery_point_name: p.text,
                             delivery_point_address: p.place_name,
                             dest_lat: p.center[1],
@@ -419,158 +696,325 @@ function AddShipmentModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 
           {/* Cargo Payload (requested) */}
           <div className="space-y-4">
-             <label className="text-[10px] font-black text-muted uppercase tracking-widest pl-1">Cargo Payload Configuration</label>
-             <div className="flex gap-4">
-                  <div className="flex-1 space-y-2">
-                     <div className="relative">
-                        <Package size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
-                        <input 
-                          type="number"
-                          placeholder="Item Count"
-                          min="1"
-                          value={formData.total_items}
-                          onChange={(e) => setFormData({...formData, total_items: parseInt(e.target.value) || 0})}
-                          className="w-full h-14 pl-12 bg-slate-50 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-slate-100 outline-none"
-                        />
-                     </div>
-                  </div>
-                  <div className="flex-1 space-y-2">
-                     <div className="relative">
-                        <Thermometer size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
-                        <input 
-                          type="number"
-                          placeholder="Total Weight (KG)"
-                          min="0.1"
-                          step="0.1"
-                          value={formData.total_weight_kg}
-                          onChange={(e) => setFormData({...formData, total_weight_kg: parseFloat(e.target.value) || 0})}
-                          className="w-full h-14 pl-12 bg-slate-50 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-slate-100 outline-none"
-                        />
-                     </div>
-                  </div>
-             </div>
+            <label className="text-[10px] font-black text-muted uppercase tracking-widest pl-1">Cargo Payload Configuration</label>
+            <div className="flex gap-4">
+              <div className="flex-1 space-y-2">
+                <div className="relative">
+                  <Package size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+                  <input
+                    type="number"
+                    placeholder="Item Count"
+                    min="1"
+                    value={formData.total_items}
+                    onChange={(e) => setFormData({ ...formData, total_items: parseInt(e.target.value) || 0 })}
+                    className="w-full h-14 pl-12 bg-slate-50 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-slate-100 outline-none"
+                  />
+                </div>
+              </div>
+              <div className="flex-1 space-y-2">
+                <div className="relative">
+                  <Thermometer size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+                  <input
+                    type="number"
+                    placeholder="Total Weight (KG)"
+                    min="0.1"
+                    step="0.1"
+                    value={formData.total_weight_kg}
+                    onChange={(e) => setFormData({ ...formData, total_weight_kg: parseFloat(e.target.value) || 0 })}
+                    className="w-full h-14 pl-12 bg-slate-50 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-slate-100 outline-none"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Section 2: Cargo Archetypes (Image 3 style) */}
           <div className="space-y-4">
-             <label className="text-[10px] font-black text-muted uppercase tracking-widest pl-1 flex items-center gap-2">
-               <Layers size={12} className="text-muted" /> Shipment Intelligence
-             </label>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {CARGO_ARCHETYPES.map(cargo => (
-                  <button
-                    key={cargo.id}
-                    onClick={() => setFormData({...formData, cargo_type: cargo.id})}
-                    className={clsx(
-                      "relative p-5 rounded-[2rem] border-2 text-left transition-all group overflow-hidden",
-                      formData.cargo_type === cargo.id 
-                        ? "bg-surface border-slate-900 shadow-xl shadow-slate-900/10" 
-                        : "bg-white border-slate-100 hover:border-yellow-500/30"
-                    )}
-                  >
-                    <div className="flex items-center gap-4 relative z-10">
-                       <div className={clsx(
-                         "w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110",
-                         formData.cargo_type === cargo.id ? "bg-surface2" : "bg-slate-50"
-                       )}>
-                          <img src={cargo.icon} alt="" className="w-10 h-10 object-contain drop-shadow-xl" />
-                       </div>
-                       <div>
-                          <div className={clsx(
-                            "text-sm font-black uppercase tracking-tight",
-                            formData.cargo_type === cargo.id ? "text-yellow-400" : "text-slate-900"
-                          )}>{cargo.name}</div>
-                          <div className={clsx(
-                            "text-[10px] font-bold",
-                            formData.cargo_type === cargo.id ? "text-muted" : "text-muted"
-                          )}>{cargo.desc}</div>
-                       </div>
+            <label className="text-[10px] font-black text-muted uppercase tracking-widest pl-1 flex items-center gap-2">
+              <Layers size={12} className="text-muted" /> Shipment Intelligence
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {CARGO_ARCHETYPES.map(cargo => (
+                <button
+                  key={cargo.id}
+                  onClick={() => setFormData({ ...formData, cargo_type: cargo.id })}
+                  className={clsx(
+                    "relative p-5 rounded-[2rem] border-2 text-left transition-all group overflow-hidden",
+                    formData.cargo_type === cargo.id
+                      ? "bg-surface border-slate-900 shadow-xl shadow-slate-900/10"
+                      : "bg-white border-slate-100 hover:border-yellow-500/30"
+                  )}
+                >
+                  <div className="flex items-center gap-4 relative z-10">
+                    <div className={clsx(
+                      "w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110",
+                      formData.cargo_type === cargo.id ? "bg-surface2" : "bg-slate-50"
+                    )}>
+                      <img src={cargo.icon} alt="" className="w-10 h-10 object-contain drop-shadow-xl" />
                     </div>
-                    {formData.cargo_type === cargo.id && (
-                       <Zap size={40} className="absolute -right-4 -bottom-4 text-text/5 rotate-12" />
-                    )}
-                  </button>
-                ))}
-             </div>
+                    <div>
+                      <div className={clsx(
+                        "text-sm font-black uppercase tracking-tight",
+                        formData.cargo_type === cargo.id ? "text-yellow-400" : "text-slate-900"
+                      )}>{cargo.name}</div>
+                      <div className={clsx(
+                        "text-[10px] font-bold",
+                        formData.cargo_type === cargo.id ? "text-muted" : "text-muted"
+                      )}>{cargo.desc}</div>
+                    </div>
+                  </div>
+                  {formData.cargo_type === cargo.id && (
+                    <Zap size={40} className="absolute -right-4 -bottom-4 text-text/5 rotate-12" />
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Section 3: Priority & Plan for Later (Image 4 style) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-             <div className="space-y-4">
-               <label className="text-[10px] font-black text-muted uppercase tracking-widest pl-1">Priority Grid</label>
-               <div className="flex flex-wrap gap-2">
-                  {PRIORITIES.map(p => (
-                    <button
-                      key={p}
-                      onClick={() => setFormData({...formData, priority: p})}
-                      className={clsx(
-                        "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                        formData.priority === p ? "bg-surface text-yellow-400" : "bg-slate-50 text-muted hover:bg-slate-100"
-                      )}
-                    >
-                      {p}
-                    </button>
-                  ))}
-               </div>
-             </div>
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-muted uppercase tracking-widest pl-1">Priority Grid</label>
+              <div className="flex flex-wrap gap-2">
+                {PRIORITIES.map(p => (
+                  <button
+                    key={p}
+                    onClick={() => setFormData({ ...formData, priority: p })}
+                    className={clsx(
+                      "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                      formData.priority === p ? "bg-surface text-yellow-400" : "bg-slate-50 text-muted hover:bg-slate-100"
+                    )}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-             <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                   <label className="text-[10px] font-black text-muted uppercase tracking-widest pl-1">Plan For Later</label>
-                   <button 
-                     onClick={() => setFormData({...formData, plan_for_later: !formData.plan_for_later})}
-                     className={clsx(
-                       "relative w-10 h-6 rounded-full transition-colors",
-                       formData.plan_for_later ? "bg-yellow-500" : "bg-slate-200"
-                     )}
-                   >
-                      <div className={clsx(
-                        "absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm",
-                        formData.plan_for_later ? "translate-x-4" : "translate-x-0"
-                      )} />
-                   </button>
+            <div className="space-y-4">
+              {/* Mobile GPS Toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-[10px] font-black text-muted uppercase tracking-widest pl-1">Mobile GPS Tracking</label>
+                  {formData.enable_mobile_gps && (
+                    <p className="text-[9px] text-yellow-600 font-bold pl-1 mt-0.5">Setup guide shown below ↓</p>
+                  )}
                 </div>
+                <button
+                  onClick={() => setFormData({ ...formData, enable_mobile_gps: !formData.enable_mobile_gps })}
+                  className={clsx(
+                    "relative w-10 h-6 rounded-full transition-colors",
+                    formData.enable_mobile_gps ? "bg-yellow-500" : "bg-slate-200"
+                  )}
+                >
+                  <div className={clsx(
+                    "absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm",
+                    formData.enable_mobile_gps ? "translate-x-4" : "translate-x-0"
+                  )} />
+                </button>
+              </div>
 
-                {formData.plan_for_later && (
-                  <div className="flex gap-2 animate-in slide-in-from-right-4 duration-300">
-                     <div className="relative flex-1 group">
-                        <Calendar size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-yellow-500" />
-                        <input 
-                           type="date"
-                           className="w-full h-12 pl-10 pr-3 bg-slate-50 border-none rounded-xl text-[10px] font-bold text-slate-900 focus:ring-2 focus:ring-yellow-500/20"
-                           onChange={(e) => setFormData({...formData, scheduled_date: e.target.value})}
-                        />
-                     </div>
-                     <div className="relative flex-1 group">
-                        <Clock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-yellow-500" />
-                        <input 
-                           type="time"
-                           className="w-full h-12 pl-10 pr-3 bg-slate-50 border-none rounded-xl text-[10px] font-bold text-slate-900 focus:ring-2 focus:ring-yellow-500/20"
-                           onChange={(e) => setFormData({...formData, scheduled_time: e.target.value})}
-                        />
-                     </div>
+              {/* Mobile GPS — Phone + Link Generator */}
+              {formData.enable_mobile_gps && (
+                <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-2xl space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Smartphone size={14} className="text-yellow-600" />
+                    <p className="text-[9px] font-black text-yellow-700 uppercase tracking-widest">Mobile GPS Tracking</p>
                   </div>
-                )}
-             </div>
+
+                  {/* Vehicle selector */}
+                  <div>
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Select Vehicle</label>
+                    <select
+                      value={selectedVehicleId}
+                      onChange={e => { setSelectedVehicleId(e.target.value); setMobileLink('') }}
+                      className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-800 focus:ring-2 focus:ring-yellow-500/30 focus:outline-none"
+                    >
+                      <option value="">-- Choose vehicle --</option>
+                      {(vehicles as any[]).map((v: any) => (
+                        <option key={v.id} value={v.id}>{v.plate_number} · {v.vehicle_type}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Phone number */}
+                  <div>
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Driver's Mobile Number (optional)</label>
+                    <input
+                      type="tel"
+                      placeholder="+91 98765 43210"
+                      value={mobilePhone}
+                      onChange={e => { setMobilePhone(e.target.value); setMobileLink('') }}
+                      className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-800 placeholder:text-slate-300 focus:ring-2 focus:ring-yellow-500/30 focus:outline-none"
+                    />
+                  </div>
+
+                  {/* Generate button */}
+                  {!mobileLink ? (
+                    <button
+                      onClick={generateMobileLink}
+                      disabled={!selectedVehicleId || generatingLink}
+                      className="w-full h-10 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-40 text-slate-900 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2"
+                    >
+                      {generatingLink ? <Loader2 size={14} className="animate-spin" /> : <Navigation size={14} />}
+                      {generatingLink ? 'Generating…' : 'Generate Tracking Link'}
+                    </button>
+                  ) : (
+                    <div className="space-y-2">
+                      {/* Link display */}
+                      <div className="bg-white border border-emerald-300 rounded-xl p-3 flex items-center gap-2">
+                        <CheckCircle size={14} className="text-emerald-500 flex-shrink-0" />
+                        <p className="text-[9px] text-slate-700 font-mono break-all flex-1">{mobileLink}</p>
+                      </div>
+                      {/* Action buttons */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={copyLink}
+                          className="flex-1 h-9 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-[9px] uppercase tracking-widest rounded-xl flex items-center justify-center gap-1 transition-all"
+                        >
+                          {linkCopied ? <CheckCircle size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                          {linkCopied ? 'Copied!' : 'Copy'}
+                        </button>
+                        <button
+                          onClick={shareWhatsApp}
+                          disabled={!mobilePhone}
+                          className="flex-1 h-9 bg-[#25D366] hover:bg-[#20bd5a] disabled:opacity-40 text-white font-black text-[9px] uppercase tracking-widest rounded-xl flex items-center justify-center gap-1 transition-all"
+                        >
+                          <MessageCircle size={12} />
+                          WhatsApp
+                        </button>
+                      </div>
+                      <p className="text-[8px] text-slate-400 text-center">Driver opens this link → browser asks for GPS → starts streaming automatically. No app needed.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+
+              {/* Plan For Later Toggle */}
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-black text-muted uppercase tracking-widest pl-1">Plan For Later</label>
+                <button
+                  onClick={() => setFormData({ ...formData, plan_for_later: !formData.plan_for_later })}
+                  className={clsx(
+                    "relative w-10 h-6 rounded-full transition-colors",
+                    formData.plan_for_later ? "bg-yellow-500" : "bg-slate-200"
+                  )}
+                >
+                  <div className={clsx(
+                    "absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm",
+                    formData.plan_for_later ? "translate-x-4" : "translate-x-0"
+                  )} />
+                </button>
+              </div>
+
+              {formData.plan_for_later && (
+                <div className="flex gap-2 animate-in slide-in-from-right-4 duration-300">
+                  <div className="relative flex-1 group">
+                    <Calendar size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-yellow-500" />
+                    <input
+                      type="date"
+                      className="w-full h-12 pl-10 pr-3 bg-slate-50 border-none rounded-xl text-[10px] font-bold text-slate-900 focus:ring-2 focus:ring-yellow-500/20"
+                      onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
+                    />
+                  </div>
+                  <div className="relative flex-1 group">
+                    <Clock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-yellow-500" />
+                    <input
+                      type="time"
+                      className="w-full h-12 pl-10 pr-3 bg-slate-50 border-none rounded-xl text-[10px] font-bold text-slate-900 focus:ring-2 focus:ring-yellow-500/20"
+                      onChange={(e) => setFormData({ ...formData, scheduled_time: e.target.value })}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-          
+
           <div className="flex gap-4 pt-6">
             <Button variant="ghost" className="flex-1 h-20 rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-red-50 hover:text-red-500 border-none" onClick={onClose}>
-               Abort
+              Abort
             </Button>
-            <Button 
-              variant="accent" 
+            <Button
+              variant="accent"
               className="flex-[2] h-20 rounded-[2rem] font-black uppercase tracking-widest text-xs shadow-2xl shadow-yellow-500/20 bg-yellow-500 hover:bg-yellow-400 text-slate-900"
               onClick={() => mutation.mutate(formData)}
-              disabled={!formData.delivery_point_id || mutation.isPending}
+              disabled={!formData.delivery_point_name || mutation.isPending}
             >
               {mutation.isPending ? (
                 <div className="flex items-center gap-2">
-                   <Loader2 size={16} className="animate-spin" /> Transmitting...
+                  <Loader2 size={16} className="animate-spin" /> Transmitting...
                 </div>
               ) : "Confirm Shipment Deployment"}
             </Button>
           </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function EditShipmentModal({ shipment, isOpen, onClose }: { shipment: any; isOpen: boolean; onClose: () => void }) {
+  const queryClient = useQueryClient()
+
+  const [formData, setFormData] = useState({
+    priority: shipment?.priority || 'medium',
+    total_items: shipment?.total_items || 1,
+    total_weight_kg: shipment?.total_weight_kg || 5.0,
+  })
+
+  useEffect(() => {
+    if (shipment) {
+      setFormData({
+        priority: shipment.priority || 'medium',
+        total_items: shipment.total_items || 1,
+        total_weight_kg: shipment.total_weight_kg || 5.0,
+      })
+    }
+  }, [shipment])
+
+  const mutation = useMutation({
+    mutationFn: (data: any) => shipmentsAPI.edit(shipment.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['shipments'] })
+      toast.success('Shipment successfully updated')
+      onClose()
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.detail || error?.message || 'Failed to update shipment'
+      toast.error(typeof msg === 'string' ? msg : JSON.stringify(msg))
+    }
+  })
+
+  if (!isOpen || !shipment) return null
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 backdrop-blur-2xl bg-surface2/40 animate-in fade-in duration-500">
+      <div className="bg-white rounded-[3rem] w-full max-w-lg shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] border border-white/20 p-10 space-y-8 animate-in zoom-in-95 duration-500">
+        <h2 className="text-3xl font-black text-text font-display tracking-tight uppercase leading-none">Edit Shipment</h2>
+        <div className="space-y-4">
+          <label className="text-[10px] font-black text-muted uppercase tracking-widest">Priority</label>
+          <div className="flex gap-2">
+            {PRIORITIES.map(p => (
+              <button key={p} onClick={() => setFormData({ ...formData, priority: p })} className={clsx("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest", formData.priority === p ? "bg-surface text-yellow-400" : "bg-slate-50 text-muted hover:bg-slate-100")}>{p}</button>
+            ))}
+          </div>
+        </div>
+        <div className="flex gap-4">
+          <div className="flex-1 space-y-2">
+            <label className="text-[10px] font-black text-muted uppercase tracking-widest">Total Items</label>
+            <input type="number" value={formData.total_items} onChange={e => setFormData({ ...formData, total_items: parseInt(e.target.value) || 0 })} className="w-full h-12 px-4 bg-slate-50 rounded-xl text-xs font-bold focus:ring-2 focus:ring-slate-100 outline-none" />
+          </div>
+          <div className="flex-1 space-y-2">
+            <label className="text-[10px] font-black text-muted uppercase tracking-widest">Weight (KG)</label>
+            <input type="number" step="0.1" value={formData.total_weight_kg} onChange={e => setFormData({ ...formData, total_weight_kg: parseFloat(e.target.value) || 0 })} className="w-full h-12 px-4 bg-slate-50 rounded-xl text-xs font-bold focus:ring-2 focus:ring-slate-100 outline-none" />
+          </div>
+        </div>
+        <div className="flex gap-4 pt-4">
+          <Button variant="ghost" className="flex-1 h-16 rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-red-50 hover:text-red-500" onClick={onClose}>Abort</Button>
+          <Button variant="accent" className="flex-1 h-16 rounded-[2rem] font-black uppercase tracking-widest text-xs shadow-2xl shadow-yellow-500/20 bg-yellow-500 hover:bg-yellow-400 text-slate-900" onClick={() => mutation.mutate(formData)} disabled={mutation.isPending}>
+            {mutation.isPending ? "Updating..." : "Update"}
+          </Button>
         </div>
       </div>
     </div>

@@ -19,7 +19,7 @@ class Settings:
     REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
     # Database
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+asyncpg://routeiq:routeiq_pass@db:5433/routeiq")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+asyncpg://routeiq:routeiq_pass@127.0.0.1:1234/routeiq")
     DATABASE_POOL_SIZE: int = int(os.getenv("DATABASE_POOL_SIZE", "20"))
     DATABASE_MAX_OVERFLOW: int = int(os.getenv("DATABASE_MAX_OVERFLOW", "10"))
 

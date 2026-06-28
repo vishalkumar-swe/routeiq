@@ -16,6 +16,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY health /usr/share/nginx/html/health
 
 EXPOSE 80
 

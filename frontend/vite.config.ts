@@ -13,8 +13,13 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5173,
       proxy: {
+        '/api/v1/telemetry/ws': {
+          target: env.VITE_PROXY_TARGET || 'http://127.0.0.1:8001',
+          ws: true,
+          changeOrigin: true
+        },
         '/api': { 
-          target: env.VITE_PROXY_TARGET || 'http://127.0.0.1:8000', 
+          target: env.VITE_PROXY_TARGET || 'http://127.0.0.1:8001', 
           changeOrigin: true 
         },
       },

@@ -1,18 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Body
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict, Any, Optional
 import uuid
 import random
 from datetime import datetime, timezone
 
-from app.core.database import get_db
 from app.core.security import get_current_user, require_role
-from app.models.models import Vehicle, Shipment, MaintenanceAlert
 from app.schemas.schemas import TokenData
 
 router = APIRouter()
-
+from app.supabase_db import supabase_db
 # Default predefined simulation scenarios
 SCENARIOS = {
     "backhaul": {
@@ -116,16 +112,19 @@ SCENARIOS = {
 }
 
 # Live active alerts list in-memory to simulate dynamic changes
-// NOTE: In-memory ALERT_FEED removed; using DB-backed MaintenanceAlert model.
+# NOTE: In-memory ALERT_FEED removed; using DB-backed MaintenanceAlert model.
 
 @router.get("/shipments")
 async def get_shipments(
-    db: AsyncSession = Depends(get_db),
     token: TokenData = Depends(get_current_user)
-):
-    """Retrieve all shipments from the database."""
-    result = await db.execute(select(Shipment))
-    return result.scalars().all()
+) -> List[Dict[str, Any]]:
+    """Retrieve all shipments using Supabase client.
+
+    Returns a list of shipment dictionaries.
+    """
+    # Supabase returns data as a list of dicts
+    shipments = supabase_db.select_all('shipments')
+    return shipments
 
 @router.get("/scenarios")
 async def get_cargo_scenarios(
@@ -136,53 +135,51 @@ async def get_cargo_scenarios(
 
 @router.get("/security-alerts")
 async def get_security_alerts(
-    db: AsyncSession = Depends(get_db),
     token: TokenData = Depends(get_current_user)
-):
-    """Fetch live security alerts from the database (unresolved)."""
-    result = await db.execute(select(MaintenanceAlert).where(MaintenanceAlert.is_resolved == False))
-    alerts = result.scalars().all()
-    # Convert to dicts for response
+) -> List[Dict[str, Any]]:
+    """Fetch live security alerts from Supabase (unresolved)."""
+    alerts = supabase_db.select_all('maintenance_alerts')
+    # Filter unresolved alerts
+    alerts = [a for a in alerts if not a.get('is_resolved')]
     return [
         {
-            "id": str(alert.id),
-            "timestamp": alert.created_at.isoformat() if alert.created_at else None,
-            "vehicle_id": str(alert.vehicle_id),
-            "type": alert.alert_type,
-            "severity": alert.severity,
-            "message": alert.description,
-            "status": "resolved" if alert.is_resolved else "active",
+            "id": str(a.get('id')),
+            "timestamp": a.get('created_at'),
+            "vehicle_id": str(a.get('vehicle_id')),
+            "type": a.get('alert_type'),
+            "severity": a.get('severity'),
+            "message": a.get('description'),
+            "status": "active",
         }
-        for alert in alerts
+        for a in alerts
     ]
 
 @router.post("/trigger-alert")
 async def trigger_simulated_alert(
-    db: AsyncSession = Depends(get_db),
     payload: Dict[str, Any] = Body(...),
     token: TokenData = Depends(require_role("admin", "superadmin", "manager"))
 ):
-    """Create a simulated security alert record in the database."""
+    """Create a simulated security alert record in Supabase."""
     alert_type = payload.get("type", "tamper_detected")
     plate_number = payload.get("plate_number", "DL-1GC-4922")
     message = payload.get("message", "Simulated security alert triggered by operator.")
     severity = "critical" if alert_type == "tamper_detected" else "high"
     cargo_id = f"SH-{random.randint(10000, 99999)}"
-    # Create MaintenanceAlert instance
-    new_alert = MaintenanceAlert(
-        vehicle_id=uuid.uuid4(),  # Placeholder; in real app associate vehicle
-        alert_type=alert_type,
-        severity=severity,
-        description=message,
-        is_resolved=False,
-    )
-    # Optional: store additional fields as JSON or using extra columns if defined
-    db.add(new_alert)
-    await db.commit()
-    await db.refresh(new_alert)
+    
+    # Insert via Supabase
+    new_alert_data = {
+        "vehicle_id": str(uuid.uuid4()),  # Placeholder; in real app associate vehicle
+        "alert_type": alert_type,
+        "severity": severity,
+        "description": message,
+        "is_resolved": False,
+    }
+    inserted = supabase_db.insert('maintenance_alerts', new_alert_data)
+    created_alert = inserted[0] if inserted else new_alert_data
+
     return {"status": "success", "alert": {
-        "id": str(new_alert.id),
-        "timestamp": new_alert.created_at.isoformat() if new_alert.created_at else None,
+        "id": str(created_alert.get("id")) if created_alert.get("id") else "",
+        "timestamp": created_alert.get("created_at"),
         "plate_number": plate_number,
         "type": alert_type,
         "severity": severity,
@@ -193,23 +190,27 @@ async def trigger_simulated_alert(
 
 @router.post("/resolve-alert/{alert_id}")
 async def resolve_simulated_alert(
-    db: AsyncSession = Depends(get_db),
     alert_id: str,
     token: TokenData = Depends(require_role("admin", "superadmin", "manager"))
 ):
-    """Mark a security alert as resolved in the database."""
-    result = await db.execute(select(MaintenanceAlert).where(MaintenanceAlert.id == alert_id))
-    alert = result.scalar_one_or_none()
-    if not alert:
+    """Mark a security alert as resolved in Supabase."""
+    # Check if exists first
+    alerts = supabase_db.select_all('maintenance_alerts', filters={"id": alert_id})
+    if not alerts:
         raise HTTPException(status_code=404, detail="Alert not found")
-    alert.is_resolved = True
-    alert.resolved_at = datetime.now(timezone.utc)
-    await db.commit()
+        
+    resolved_at_val = datetime.now(timezone.utc).isoformat()
+    updated = supabase_db.update('maintenance_alerts', alert_id, {
+        "is_resolved": True,
+        "resolved_at": resolved_at_val
+    })
+    
     return {"status": "success", "alert": {
-        "id": str(alert.id),
+        "id": alert_id,
         "status": "resolved",
-        "resolved_at": alert.resolved_at.isoformat()
+        "resolved_at": resolved_at_val
     }}
+
 
 @router.post("/optimize-pooling")
 async def optimize_pooling(

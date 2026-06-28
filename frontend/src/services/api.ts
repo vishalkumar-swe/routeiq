@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { useAuthStore } from '@/store/authStore'
-import toast from 'react-hot-toast'
+
 
 export const api = axios.create({
   baseURL: '/api/v1',
@@ -52,6 +52,12 @@ api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config
+
+    // Tag pure network failures (no response) so UI can handle them gracefully
+    if (!error.response && !error.code) {
+      error.code = 'ERR_NETWORK'
+    }
+
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true
       const refreshToken = useAuthStore.getState().refreshToken
@@ -69,11 +75,6 @@ api.interceptors.response.use(
       }
     }
     
-    let message = error.response?.data?.detail || 'Something went wrong'
-    if (Array.isArray(message)) {
-      message = message.map(err => `${err.loc.join('.')}: ${err.msg}`).join(', ')
-    }
-    toast.error(typeof message === 'string' ? message : JSON.stringify(message))
     return Promise.reject(error)
   }
 )
@@ -90,24 +91,18 @@ export const authAPI = {
   logout: () => api.post('/auth/logout'),
 }
 
-// Others use trailing slashes where confirmed necessary to avoid 307 redirects
+// Vehicles API — backed by FastAPI (Edge Function is a stub with no DB access)
 export const vehiclesAPI = {
   list: (params?: any) => api.get('/vehicles/', { params }).then(r => r.data),
-  get: (id: string) => api.get(`/vehicles/${id}/`).then(r => r.data),
+  get: (id: string) => api.get(`/vehicles/${id}`).then(r => r.data),
   create: (data: object) => api.post('/vehicles/', data).then(r => r.data),
-  update: (id: string, data: object) => api.patch(`/vehicles/${id}/`, data).then(r => r.data),
-  delete: (id: string) => api.delete(`/vehicles/${id}/`),
-  summary: () => api.get('/vehicles/summary/').then(r => r.data),
+  update: (id: string, data: object) => api.patch(`/vehicles/${id}`, data).then(r => r.data),
+  delete: (id: string) => api.delete(`/vehicles/${id}`),
+  summary: () => api.get('/vehicles/summary').then(r => r.data),
 }
 
-export const routesAPI = {
-  list: (params?: any) => api.get('/routes/', { params }).then(r => r.data),
-  get: (id: string) => api.get(`/routes/${id}/`).then(r => r.data),
-  updateStatus: (id: string, status: string) =>
-    api.patch(`/routes/${id}/status/`, { status }).then(r => r.data),
-  reroute: (id: string, newSequence: string[]) =>
-    api.post(`/routes/${id}/reroute/`, { new_sequence: newSequence }).then(r => r.data),
-}
+
+
 
 export const optimizationAPI = {
   optimize: (data: any) => api.post('/optimize/', data).then(r => r.data),
@@ -119,26 +114,11 @@ export const optimizationAPI = {
     api.post(`/agents/cargo-monitoring/${shipmentId}`).then(r => r.data),
 }
 
-export const telemetryAPI = {
-  ingest: (data: object) => api.post('/telemetry/', data).then(r => r.data),
-  history: (vehicleId: string, limit = 100) =>
-    api.get(`/telemetry/${vehicleId}/history/`, { params: { limit } }).then(r => r.data),
-  live: (vehicleId: string) => api.get(`/telemetry/${vehicleId}/live/`).then(r => r.data),
-  logStoppage: (data: { vehicle_id: string, lat: number, lng: number, reason: string }) => 
-    api.post('/telemetry/stoppages', data).then(r => r.data),
-}
+
+
 
 export const dashboardAPI = {
   kpis: () => api.get('/dashboard/kpis/').then(r => r.data),
-}
-
-export const shipmentsAPI = {
-  list: (params?: any) => api.get('/shipments/', { params }).then(r => r.data),
-  get: (id: string) => api.get(`/shipments/${id}/`).then(r => r.data),
-  trackPublicly: (trackingId: string) => api.get(`/shipments/track/${trackingId}`).then(r => r.data),
-  create: (data: object) => api.post('/shipments/', shipmentDataFormatter(data)).then(r => r.data),
-  updateStatus: (id: string, status: string, params?: { lat?: number, lng?: number, received_by?: string, signature_data?: string }) => 
-    api.patch(`/shipments/${id}/`, null, { params: { status, ...params } }).then(r => r.data),
 }
 
 const shipmentDataFormatter = (data: any) => {
@@ -158,13 +138,7 @@ export const deliveryPointsAPI = {
   list: (params?: any) => api.get('/routes/delivery-points/', { params }).then(r => r.data),
 }
 
-export const analyticsAPI = {
-  insights: () => api.get('/analytics/insights/').then(r => r.data),
-  metrics: () => api.get('/analytics/metrics/').then(r => r.data),
-  activeMissions: () => api.get('/analytics/active-missions').then(r => r.data),
-  syncSparkGPS: () => api.post('/analytics/sync-sparkgps').then(r => r.data),
-  auditLogs: () => api.get('/analytics/audit-logs').then(r => r.data),
-}
+
 
 export const usersAPI = {
   list: () => api.get('/users/').then(r => r.data),
@@ -175,6 +149,47 @@ export const trafficAPI = {
   simulateEvent: (lat: number, lng: number, type: string, severity: number) => 
     api.post('/traffic/event', { lat, lng, event_type: type, severity }).then(r => r.data),
 }
+
+// Supabase Edge Function Base URL
+const cargoEdgeAPI = axios.create({
+  baseURL: import.meta.env.VITE_SUPABASE_URL 
+    ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cargo`
+    : 'https://plutdajzefwtpgofpqlk.supabase.co/functions/v1/cargo',
+  timeout: 30_000,
+  headers: {
+    'Content-Type': 'application/json',
+    'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+  },
+})
+
+// Attach authorization to Edge Functions if needed
+cargoEdgeAPI.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().token
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+// Vehicles Edge Function client
+const vehiclesEdgeAPI = axios.create({
+  baseURL: import.meta.env.VITE_SUPABASE_URL
+    ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vehicles`
+    : 'https://plutdajzefwtpgofpqlk.supabase.co/functions/v1/vehicles',
+  timeout: 30_000,
+  headers: {
+    'Content-Type': 'application/json',
+    'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+  },
+})
+
+vehiclesEdgeAPI.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().token
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
 
 export const cargoAPI = {
   scenarios: () => api.get('/cargo/scenarios').then(r => r.data),
@@ -192,6 +207,120 @@ export const cargoAPI = {
   pricingRecommendations: (params: { distance_km: number, weight_kg: number, cargo_type: string, congestion_index: number, weather_severity: number }) =>
     api.get('/cargo/pricing-recommendations', { params }).then(r => r.data),
 }
+
+// Supabase Edge Function clients for other modules
+const shipmentsEdgeAPI = axios.create({
+  baseURL: import.meta.env.VITE_SUPABASE_URL
+    ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/shipments`
+    : 'https://plutdajzefwtpgofpqlk.supabase.co/functions/v1/shipments',
+  timeout: 30_000,
+  headers: {
+    'Content-Type': 'application/json',
+    'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+  },
+})
+
+shipmentsEdgeAPI.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().token
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+export const shipmentsAPI = {
+  list: (params?: any) => api.get('/shipments/', { params }).then(r => r.data),
+  get: (id: string) => api.get(`/shipments/${id}`).then(r => r.data),
+  trackPublicly: (trackingId: string) => api.get(`/shipments/track/${trackingId}`).then(r => r.data),
+  create: (data: object) => api.post('/shipments/', data).then(r => r.data),
+  updateStatus: (id: string, status: string, params?: any) => api.patch(`/shipments/${id}`, null, { params: { status, ...params } }).then(r => r.data),
+  edit: (id: string, data: any) => api.patch(`/shipments/${id}/edit`, data).then(r => r.data),
+  delete: (id: string) => api.delete(`/shipments/${id}`).then(r => r.data),
+}
+
+const routesEdgeAPI = axios.create({
+  baseURL: import.meta.env.VITE_SUPABASE_URL
+    ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/routes`
+    : 'https://plutdajzefwtpgofpqlk.supabase.co/functions/v1/routes',
+  timeout: 30_000,
+  headers: {
+    'Content-Type': 'application/json',
+    'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+  },
+})
+
+routesEdgeAPI.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().token
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+export const routesAPI = {
+  list: (params?: any) => api.get('/routes/', { params }).then(r => r.data),
+  get: (id: string) => api.get(`/routes/${id}`).then(r => r.data),
+  update: (id: string, data: any) => api.patch(`/routes/${id}`, data).then(r => r.data),
+  delete: (id: string) => api.delete(`/routes/${id}`).then(r => r.data),
+  updateStatus: (id: string, status: string) => api.patch(`/routes/${id}/status`, { status }).then(r => r.data),
+  reroute: (id: string, newSequence: string[]) => api.post(`/routes/${id}/reroute`, { new_sequence: newSequence }).then(r => r.data),
+};
+
+const telemetryEdgeAPI = axios.create({
+  baseURL: import.meta.env.VITE_SUPABASE_URL
+    ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telemetry`
+    : 'https://plutdajzefwtpgofpqlk.supabase.co/functions/v1/telemetry',
+  timeout: 30_000,
+  headers: {
+    'Content-Type': 'application/json',
+    'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+  },
+})
+
+telemetryEdgeAPI.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().token
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+export const telemetryAPI = {
+  ingest: (data: object) => api.post('/telemetry/', data).then(r => r.data),
+  history: (vehicleId: string, limit = 100) => api.get(`/telemetry/${vehicleId}/history`, { params: { limit } }).then(r => r.data),
+  live: (vehicleId: string) => api.get(`/telemetry/${vehicleId}/live`).then(r => r.data),
+  logStoppage: (data: any) => api.post('/telemetry/stoppages', data).then(r => r.data),
+  createMobileSession: (vehicleId: string, phone?: string) =>
+    api.post('/telemetry/mobile-session', { vehicle_id: vehicleId, phone }).then(r => r.data),
+}
+
+const analyticsEdgeAPI = axios.create({
+  baseURL: import.meta.env.VITE_SUPABASE_URL
+    ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analytics`
+    : 'https://plutdajzefwtpgofpqlk.supabase.co/functions/v1/analytics',
+  timeout: 30_000,
+  headers: {
+    'Content-Type': 'application/json',
+    'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+  },
+})
+
+analyticsEdgeAPI.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().token
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+export const analyticsAPI = {
+  insights: () => api.get('/analytics/insights').then(r => r.data),
+  metrics: () => api.get('/analytics/metrics').then(r => r.data),
+  activeMissions: () => api.get('/analytics/active-missions').then(r => r.data),
+  syncSparkGPS: () => api.post('/analytics/sync-sparkgps').then(r => r.data),
+  auditLogs: () => api.get('/analytics/audit-logs').then(r => r.data),
+}
+
 
 
 export const telemetryWS = {

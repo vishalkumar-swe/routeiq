@@ -265,4 +265,66 @@ class ShipmentService:
             db_shipment.is_verified = SecurityService.verify_chain(db_shipment.logs)
         return db_shipment
 
+    @staticmethod
+    async def update_shipment(db: AsyncSession, shipment_id: uuid.UUID, update_data: dict) -> Optional[Shipment]:
+        result = await db.execute(
+            select(Shipment)
+            .options(
+                selectinload(Shipment.delivery_point), 
+                selectinload(Shipment.parcels),
+                selectinload(Shipment.logs)
+            )
+            .where(Shipment.id == shipment_id)
+        )
+        db_shipment = result.scalar_one_or_none()
+        if not db_shipment:
+            return None
+            
+        for key, value in update_data.items():
+            if hasattr(db_shipment, key) and value is not None:
+                setattr(db_shipment, key, value)
+                
+        await db.commit()
+        await db.refresh(db_shipment)
+        from app.services.security_service import SecurityService
+        db_shipment.is_verified = SecurityService.verify_chain(db_shipment.logs)
+        return db_shipment
+
+    @staticmethod
+    async def delete_shipment(db: AsyncSession, shipment_id: uuid.UUID) -> bool:
+        from sqlalchemy import delete
+        from app.models.models import Parcel, ShipmentLog, Invoice, Payment, DeliveryPoint, RouteStop
+        
+        result = await db.execute(select(Shipment).where(Shipment.id == shipment_id))
+        shipment = result.scalar_one_or_none()
+        if not shipment:
+            return False
+            
+        # 1. Get associated delivery point
+        dp_result = await db.execute(select(DeliveryPoint).where(DeliveryPoint.shipment_id == shipment_id))
+        delivery_point = dp_result.scalar_one_or_none()
+        
+        # 2. Delete route stops
+        if delivery_point:
+            await db.execute(delete(RouteStop).where(RouteStop.delivery_point_id == delivery_point.id))
+            
+        # 3. Get associated invoices and delete payments
+        invoices_result = await db.execute(select(Invoice.id).where(Invoice.shipment_id == shipment_id))
+        invoice_ids = invoices_result.scalars().all()
+        if invoice_ids:
+            await db.execute(delete(Payment).where(Payment.invoice_id.in_(invoice_ids)))
+            await db.execute(delete(Invoice).where(Invoice.shipment_id == shipment_id))
+            
+        # 4. Delete parcels and logs
+        await db.execute(delete(Parcel).where(Parcel.shipment_id == shipment_id))
+        await db.execute(delete(ShipmentLog).where(ShipmentLog.shipment_id == shipment_id))
+        
+        # 5. Delete delivery point
+        if delivery_point:
+            await db.execute(delete(DeliveryPoint).where(DeliveryPoint.shipment_id == shipment_id))
+            
+        # 6. Delete shipment
+        await db.delete(shipment)
+        await db.commit()
+        return True
 

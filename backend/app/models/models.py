@@ -50,8 +50,6 @@ class User(Base, TimestampMixin):
 
 # ================= VEHICLES =================
 class Vehicle(Base, TimestampMixin):
-    # GPS tracking relationship
-    gps_points: Mapped[List["GPSPoint"]] = relationship("GPSPoint", back_populates="vehicle", cascade="all, delete-orphan")
     __tablename__ = "vehicles"
 
     id: Mapped[uuid.UUID] = uuid_pk()
@@ -87,9 +85,10 @@ class Vehicle(Base, TimestampMixin):
     cargo_types: Mapped[Optional[list]] = mapped_column(JSON, default=list)
 
     driver = relationship("User", back_populates="vehicles")
-    routes = relationship("Route", back_populates="vehicle")
-    telemetry = relationship("Telemetry", back_populates="vehicle")
-    alerts = relationship("MaintenanceAlert", back_populates="vehicle")
+    routes = relationship("Route", back_populates="vehicle", cascade="all, delete-orphan")
+    telemetry = relationship("Telemetry", back_populates="vehicle", cascade="all, delete-orphan")
+    alerts = relationship("MaintenanceAlert", back_populates="vehicle", cascade="all, delete-orphan")
+    stoppages = relationship("VehicleStoppage", back_populates="vehicle", cascade="all, delete-orphan")
 
 
 # ================= DEPOTS =================
@@ -165,7 +164,7 @@ class Route(Base, TimestampMixin):
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
     vehicle = relationship("Vehicle", back_populates="routes")
-    stops = relationship("RouteStop", back_populates="route")
+    stops = relationship("RouteStop", back_populates="route", cascade="all, delete-orphan")
 
 
 class RouteStop(Base, TimestampMixin):
@@ -230,7 +229,7 @@ class VehicleStoppage(Base, TimestampMixin):
     reason: Mapped[str] = mapped_column(String(255), default="unknown") # "Traffic", "Fuel", "Delivery", "Break"
     duration_minutes: Mapped[int] = mapped_column(Integer, default=0)
 
-    vehicle = relationship("Vehicle")
+    vehicle = relationship("Vehicle", back_populates="stoppages")
 
 
 # ================= ALERTS =================

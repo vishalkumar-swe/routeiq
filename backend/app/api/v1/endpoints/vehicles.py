@@ -117,10 +117,27 @@ async def update_vehicle(
 async def delete_vehicle(
     vehicle_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: TokenData = Depends(require_role("admin")),
+    _: TokenData = Depends(require_role("admin", "manager")),
 ):
+    from sqlalchemy import delete
+    from app.models.models import Route, Telemetry, MaintenanceAlert, VehicleStoppage, GPSPoint, RouteStop
+    
     result = await db.execute(select(Vehicle).where(Vehicle.id == vehicle_id))
     vehicle = result.scalar_one_or_none()
     if not vehicle:
         raise HTTPException(status_code=404, detail="Vehicle not found")
+        
+    # Delete dependent objects manually due to lack of ON DELETE CASCADE in DB schema
+    routes_result = await db.execute(select(Route.id).where(Route.vehicle_id == vehicle_id))
+    route_ids = routes_result.scalars().all()
+    if route_ids:
+        await db.execute(delete(RouteStop).where(RouteStop.route_id.in_(route_ids)))
+        await db.execute(delete(Route).where(Route.id.in_(route_ids)))
+
+    await db.execute(delete(Telemetry).where(Telemetry.vehicle_id == vehicle_id))
+    await db.execute(delete(MaintenanceAlert).where(MaintenanceAlert.vehicle_id == vehicle_id))
+    await db.execute(delete(VehicleStoppage).where(VehicleStoppage.vehicle_id == vehicle_id))
+    await db.execute(delete(GPSPoint).where(GPSPoint.vehicle_id == vehicle_id))
+    
     await db.delete(vehicle)
+    await db.commit()

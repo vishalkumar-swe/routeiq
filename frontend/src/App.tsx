@@ -11,10 +11,11 @@ import SuperadminPage from '@/pages/SuperadminPage'
 import AIHubPage from '@/pages/AIHubPage'
 import CargoNetworkPage from '@/pages/CargoNetworkPage'
 import ShipmentsPage from '@/pages/ShipmentsPage'
+import RouteDetailsPage from '@/pages/RouteDetailsPage'
 import DriverPage from '@/pages/DriverPage'
 import CustomerTrackingPage from '@/pages/CustomerTrackingPage'
-import LiveBiddingPage from '@/pages/LiveBiddingPage'
 import LiveMapPage from '@/pages/LiveMapPage'
+import MobileTrackPage from '@/pages/MobileTrackPage'
 
 function PrivateRoute({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) {
   const token = useAuthStore(s => s.token)
@@ -37,6 +38,8 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/track" element={<CustomerTrackingPage />} />
         <Route path="/track/:trackingId" element={<CustomerTrackingPage />} />
+        {/* Public mobile GPS tracking page — no auth needed */}
+        <Route path="/m/:token" element={<MobileTrackPage />} />
         <Route path="/driver" element={
           <PrivateRoute allowedRoles={['superadmin', 'admin', 'driver']}>
             <DriverPage />
@@ -73,6 +76,11 @@ export default function App() {
               <RoutesPage />
             </PrivateRoute>
           } />
+          <Route path="routes/:id" element={
+            <PrivateRoute allowedRoles={['superadmin', 'admin']}>
+              <RouteDetailsPage />
+            </PrivateRoute>
+          } />
           <Route path="optimize" element={
             <PrivateRoute allowedRoles={['superadmin', 'admin']}>
               <OptimizePage />
@@ -96,11 +104,6 @@ export default function App() {
           <Route path="cargo-network" element={
             <PrivateRoute allowedRoles={['superadmin', 'admin']}>
               <CargoNetworkPage />
-            </PrivateRoute>
-          } />
-          <Route path="bidding" element={
-            <PrivateRoute allowedRoles={['superadmin', 'admin']}>
-              <LiveBiddingPage />
             </PrivateRoute>
           } />
         </Route>

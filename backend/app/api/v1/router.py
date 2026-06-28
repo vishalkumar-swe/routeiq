@@ -1,7 +1,7 @@
 """API v1 router — aggregates all endpoint routers."""
 from fastapi import APIRouter
 
-from .endpoints import auth, users, vehicles, routes, telemetry, dashboard, optimization, shipments, analytics, traffic, depots, cargo, gps
+from .endpoints import auth, users, vehicles, routes, telemetry, dashboard, optimization, shipments, analytics, traffic, depots, cargo, gps, supabase_auth, spark_gps
 
 api_router = APIRouter()
 
@@ -18,4 +18,4 @@ api_router.include_router(traffic.router,      prefix="/traffic",      tags=["Tr
 api_router.include_router(depots.router,       prefix="/depots",       tags=["Depots"])
 api_router.include_router(cargo.router,        prefix="/cargo",        tags=["Cargo Collaboration"])
 api_router.include_router(gps.router,        prefix="/gps",        tags=["GPS"])
-# # api_router.include_router(agents.router,       prefix="/agents",       tags=["AI Agents"])
+api_router.include_router(spark_gps.router,         prefix="/spark-gps",         tags=["Spark GPS"])

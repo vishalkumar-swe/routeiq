@@ -9,6 +9,7 @@ from app.models.models import Telemetry, Vehicle
 from app.core.redis import cache_set, cache_get
 from app.core.websocket import manager
 from app.core.database import AsyncSessionLocal
+from app.services.intelligence_engine import IntelligenceEngine
 
 logger = logging.getLogger("routeiq.telemetry")
 

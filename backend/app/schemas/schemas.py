@@ -72,7 +72,14 @@ class VehicleCreate(BaseModel):
 
 
 class VehicleUpdate(BaseModel):
-    status: Optional[str] = None
+    plate_number: Optional[str] = Field(None, min_length=4, max_length=20)
+    vehicle_type: Optional[str] = Field(None, pattern="^(truck|van|bike|car)$")
+    capacity_kg: Optional[float] = Field(None, gt=0, le=50000)
+    fuel_type: Optional[str] = None
+    fuel_capacity_liters: Optional[float] = Field(None, gt=0, le=1000)
+    fuel_efficiency_kmpl: Optional[float] = Field(None, gt=0, le=100)
+    spark_id: Optional[str] = Field(None, max_length=50)
+    status: Optional[str] = Field(None, pattern="^(available|on_route|idle|maintenance|offline)$")
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     driver_id: Optional[uuid.UUID] = None
@@ -131,6 +138,10 @@ class RouteStopSchema(BaseModel):
     delivery_point: Optional[DeliveryPointResponse] = None
 
 
+
+class RouteUpdate(BaseModel):
+    vehicle_id: Optional[uuid.UUID] = None
+    status: Optional[str] = Field(None, pattern="^(pending|optimizing|active|completed|cancelled)$")
 
 class RouteResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -284,12 +295,21 @@ class ShipmentCreate(BaseModel):
     total_items: Optional[int] = 1
     total_weight_kg: Optional[float] = 0.0
 
+    # --- Mobile GPS Option ---
+    enable_mobile_gps: Optional[bool] = False
+
 
 class ShipmentUpdate(BaseModel):
     status: Optional[str] = Field(None, pattern="^(created|picked_up|in_transit|delivered|cancelled)$")
     priority: Optional[str] = Field(None, pattern="^(low|medium|high|critical)$")
     received_by: Optional[str] = Field(None, max_length=100)
     signature_data: Optional[str] = None # Base64
+    origin_name: Optional[str] = None
+    origin_address: Optional[str] = None
+    origin_lat: Optional[float] = None
+    origin_lng: Optional[float] = None
+    total_items: Optional[int] = None
+    total_weight_kg: Optional[float] = None
 
 
 class ShipmentResponse(BaseModel):

@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.models import Route, DeliveryPoint, RouteStop
-from app.schemas.schemas import RouteResponse, TokenData, DeliveryPointResponse
+from app.schemas.schemas import RouteResponse, TokenData, DeliveryPointResponse, RouteUpdate
 
 router = APIRouter()
 
@@ -142,3 +142,66 @@ async def apply_reroute(
             
     await db.commit()
     return {"status": "rerouted", "route_id": str(route_id), "new_sequence_count": len(new_sequence)}
+
+
+@router.patch("/{route_id}", response_model=RouteResponse)
+async def update_route(
+    route_id: uuid.UUID,
+    body: RouteUpdate,
+    db: AsyncSession = Depends(get_db),
+    token: TokenData = Depends(get_current_user),
+):
+    if token.role not in ["admin", "superadmin", "manager"]:
+        raise HTTPException(status_code=403, detail="Not authorized to edit routes")
+
+    result = await db.execute(
+        select(Route)
+        .options(
+            joinedload(Route.vehicle), 
+            selectinload(Route.stops).joinedload(RouteStop.delivery_point)
+        )
+        .where(Route.id == route_id)
+    )
+    route = result.scalar_one_or_none()
+    if not route:
+        raise HTTPException(status_code=404, detail="Route not found")
+        
+    if body.vehicle_id is not None:
+        route.vehicle_id = body.vehicle_id
+        
+    if body.status is not None:
+        route.status = body.status
+        if body.status in ["active", "in_progress"]:
+            if route.vehicle:
+                route.vehicle.status = "on_route"
+        elif body.status in ["completed", "cancelled"]:
+            if route.vehicle:
+                route.vehicle.status = "available"
+
+    await db.commit()
+    await db.refresh(route)
+    return route
+
+
+@router.delete("/{route_id}")
+async def delete_route(
+    route_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    token: TokenData = Depends(get_current_user),
+):
+    if token.role not in ["admin", "superadmin", "manager"]:
+        raise HTTPException(status_code=403, detail="Not authorized to delete routes")
+
+    result = await db.execute(select(Route).options(joinedload(Route.vehicle)).where(Route.id == route_id))
+    route = result.scalar_one_or_none()
+    if not route:
+        raise HTTPException(status_code=404, detail="Route not found")
+        
+    # Free up the vehicle
+    if route.vehicle and route.vehicle.status == "on_route" and route.status in ["active", "pending"]:
+        route.vehicle.status = "available"
+
+    await db.delete(route)
+    await db.commit()
+    return {"detail": "Route deleted successfully"}
+

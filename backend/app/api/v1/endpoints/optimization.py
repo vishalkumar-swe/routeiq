@@ -251,9 +251,8 @@ async def incubate_routing(
     if token.role not in ["admin", "superadmin", "manager"]:
         raise HTTPException(status_code=403, detail="Not authorized to incubate routing")
         
-    # Resolve vehicle_id (it's a string from URL)
-    vid = uuid.UUID(vehicle_id) if isinstance(vehicle_id, str) else vehicle_id
-    decision = await reroute_engine.manual_scan(db, str(vid))
+    # Resolve vehicle_id (manual_scan handles both UUID and Plate Number)
+    decision = await reroute_engine.manual_scan(db, str(vehicle_id))
     
     if not decision:
         return {

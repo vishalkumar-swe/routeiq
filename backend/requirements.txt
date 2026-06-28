@@ -35,8 +35,9 @@ aiohttp==3.9.5
 pydantic==2.7.1
 pydantic-settings==2.2.1
 python-dotenv
-celery
+supabase>=2.0.0
 kombu
+celery==5.4.0
 
 # Monitoring
 prometheus-client==0.20.0

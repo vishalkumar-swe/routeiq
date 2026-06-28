@@ -1,15 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
-  MapPin, Navigation, CheckCircle2, ChevronRight, Phone, 
-  MessageSquare, Loader2, Zap, Cloud, Wind, Fuel, Map, 
-  Shield, Play, Square, AlertTriangle, Truck, Package 
+  Home, Map as MapIcon, Package, Bell, User, Phone, Navigation, Play, Pause, 
+  CheckCircle2, AlertTriangle, CloudRain, ShieldAlert, FileSignature, Loader2, Zap
 } from 'lucide-react';
 import { routesAPI, shipmentsAPI, telemetryAPI } from '@/services/api';
+import DriverMap from '@/components/map/DriverMap';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 
-// --- Sub-components ---
 function SignaturePad({ onSave }: { onSave: (data: string) => void }) {
   const [isDrawing, setIsDrawing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -53,9 +52,9 @@ function SignaturePad({ onSave }: { onSave: (data: string) => void }) {
 
   return (
     <div className="space-y-4">
-      <div className="bg-surface border-2 border-border rounded-[2rem] overflow-hidden touch-none h-48 relative">
+      <div className="bg-surface border border-border rounded-xl overflow-hidden touch-none h-48 relative shadow-inner">
          <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
-            <span className="text-4xl font-black uppercase tracking-[1em] text-text">SIGN HERE</span>
+            <span className="text-3xl font-black uppercase tracking-widest text-text">SIGN HERE</span>
          </div>
         <canvas 
           onMouseDown={startDrawing}
@@ -73,9 +72,9 @@ function SignaturePad({ onSave }: { onSave: (data: string) => void }) {
       </div>
       <button 
         onClick={() => onSave('SIG_' + Math.random().toString(16).slice(2, 10))}
-        className="w-full h-16 bg-yellow-500 text-black font-black uppercase tracking-widest text-[11px] rounded-2xl shadow-xl shadow-yellow-500/10 active:scale-95 transition-all"
+        className="w-full h-14 bg-yellow-500 text-black font-black uppercase tracking-widest text-xs rounded-xl shadow-lg active:scale-95 transition-transform"
       >
-        Verify & Commit
+        Save Signature
       </button>
     </div>
   );
@@ -84,14 +83,16 @@ function SignaturePad({ onSave }: { onSave: (data: string) => void }) {
 export default function DriverPage() {
   const queryClient = useQueryClient();
   const userId = useAuthStore((s: any) => s.userId);
-  const [activeStopId, setActiveStopId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'home' | 'nav' | 'deliveries' | 'alerts' | 'profile'>('home');
   const [shiftStatus, setShiftStatus] = useState<'OFFLINE' | 'ON_DUTY' | 'ON_MISSION'>('OFFLINE');
-  const [showPOD, setShowPOD] = useState(false);
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [aiAlertVisible, setAiAlertVisible] = useState(false);
+  const [liveLocation, setLiveLocation] = useState({ lat: 28.55, lng: 77.20 });
+
+  // POD State
   const [recipientName, setRecipientName] = useState('');
   const [signature, setSignature] = useState<string | null>(null);
-  const [isSimulating, setIsSimulating] = useState(false);
 
-  // 1. Fetch active route
   const { data: routes = [], isLoading } = useQuery({
     queryKey: ['driver-routes', userId],
     queryFn: () => routesAPI.list({ status: 'active' }),
@@ -100,32 +101,35 @@ export default function DriverPage() {
 
   const activeRoute = routes[0];
   const stops = activeRoute?.stops || [];
-  const currentStop = stops.find((s: any) => s.id === activeStopId) || stops.find((s: any) => s.status === 'pending');
+  const currentStop = stops.find((s: any) => s.status === 'pending');
 
-  useEffect(() => {
-    if (activeRoute && shiftStatus === 'OFFLINE') setShiftStatus('ON_DUTY');
-    if (currentStop && !activeStopId) setActiveStopId(currentStop.id);
-  }, [activeRoute, currentStop]);
+  const updateStatus = useMutation({
+    mutationFn: ({ shipmentId, status, params }: any) => 
+      shipmentsAPI.updateStatus(shipmentId, status, params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['driver-routes'] });
+      toast.success('Delivery completed successfully!');
+      setRecipientName('');
+      setSignature(null);
+    }
+  });
 
-  // 2. Real Mobile GPS Telemetry OR Simulation
+  // GPS Simulation
   useEffect(() => {
     if (shiftStatus === 'OFFLINE' || !activeRoute) return;
 
-    let watchId: number;
     let simInterval: any;
-
     if (isSimulating && currentStop) {
-      // Simulate driving from a random nearby location or current vehicle location toward destination
       let currentLat = activeRoute.vehicle?.latitude || 28.55;
       let currentLng = activeRoute.vehicle?.longitude || 77.20;
       const targetLat = currentStop.delivery_point?.lat || 28.61;
       const targetLng = currentStop.delivery_point?.lng || 77.23;
       
-      const steps = 60; // Arrive in ~60 seconds
+      const steps = 60;
       const latStep = (targetLat - currentLat) / steps;
       const lngStep = (targetLng - currentLng) / steps;
       
-      toast.success('GPS Simulator Active. Transmitting live telemetry.');
+      toast.success('GPS Simulator Started');
 
       simInterval = setInterval(() => {
         currentLat += latStep;
@@ -135,320 +139,313 @@ export default function DriverPage() {
           vehicle_id: activeRoute.vehicle_id,
           latitude: currentLat,
           longitude: currentLng,
-          speed_kmph: 45 + Math.random() * 10,
-          fuel_level_pct: 82,
+          speed_kmph: 48,
+          fuel_level_pct: 84,
           heading: 0
         }).catch(console.error);
+        
+        setLiveLocation({ lat: currentLat, lng: currentLng });
+        
+        // Randomly trigger AI Alert
+        if (Math.random() > 0.98 && !aiAlertVisible) {
+          setAiAlertVisible(true);
+        }
 
-      }, 1000);
-    } else if ('geolocation' in navigator) {
-      watchId = navigator.geolocation.watchPosition(
-        (position) => {
-          telemetryAPI.ingest({
-            vehicle_id: activeRoute.vehicle_id,
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            speed_kmph: position.coords.speed ? (position.coords.speed * 3.6) : (shiftStatus === 'ON_MISSION' ? 40 : 0),
-            fuel_level_pct: 82,
-            heading: position.coords.heading || 0
-          }).catch(console.error);
-        },
-        (error) => {
-          console.error('GPS Error:', error);
-        },
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
-      );
+      }, 2000);
     }
-
-    return () => {
-      if (watchId) navigator.geolocation.clearWatch(watchId);
-      if (simInterval) clearInterval(simInterval);
-    };
-  }, [shiftStatus, activeRoute, isSimulating, currentStop?.id]);
-
-  const updateStatus = useMutation({
-    mutationFn: ({ shipmentId, status, params }: any) => 
-      shipmentsAPI.updateStatus(shipmentId, status, params),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['driver-routes'] });
-      toast.success('Status anchored to blockchain log');
-      setShowPOD(false);
-      setRecipientName('');
-      setSignature(null);
-    }
-  });
-
-  const handleShiftToggle = () => {
-    if (shiftStatus === 'OFFLINE') {
-      setShiftStatus('ON_DUTY');
-      toast.success('Shift started. Systems green.');
-    } else {
-      setShiftStatus('OFFLINE');
-      toast.error('Shift ended. Telemetry offline.');
-    }
-  };
-
-  const handleStartMission = () => {
-    setShiftStatus('ON_MISSION');
-    toast.success('Mission initiated. Rerouting to waypoint 1.');
-  };
+    return () => clearInterval(simInterval);
+  }, [shiftStatus, activeRoute, isSimulating, currentStop?.id, aiAlertVisible]);
 
   const finalizeDelivery = () => {
-    if (!recipientName || !signature) return toast.error('Check fields');
+    if (!recipientName || !signature) return toast.error('Check signature fields');
+    if (!currentStop) return toast.error('No active stop');
     updateStatus.mutate({
       shipmentId: currentStop.delivery_point.shipment_id,
       status: 'delivered',
-      params: { 
-        lat: 28.52, lng: 77.21, 
-        received_by: recipientName, 
-        signature_data: signature 
-      }
+      params: { received_by: recipientName, signature_data: signature }
     });
   };
 
-  if (isLoading) return (
-    <div className="min-h-screen bg-surface2 flex flex-col items-center justify-center p-6">
-      <Loader2 className="w-12 h-12 text-yellow-500 animate-spin mb-4" />
-      <p className="text-muted font-black uppercase tracking-widest text-[10px]">Verifying Manifest...</p>
+  const renderHome = () => (
+    <div className="space-y-4 pb-24">
+      {/* Driver Header */}
+      <div className="bg-surface p-6 rounded-2xl border border-border shadow-md">
+        <h2 className="text-xs font-bold text-muted uppercase tracking-widest">RouteIQ Driver</h2>
+        <h1 className="text-xl font-black uppercase mt-1">Welcome, Driver</h1>
+        <div className="mt-4 flex justify-between items-center text-sm">
+           <div>
+              <p className="text-muted">Truck: <span className="font-bold text-text">{activeRoute?.vehicle?.plate_number || 'HR38AC1276'}</span></p>
+           </div>
+           <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${shiftStatus !== 'OFFLINE' ? 'bg-success animate-pulse' : 'bg-slate-500'}`} />
+              <span className="font-black tracking-widest text-[10px] uppercase">
+                {shiftStatus !== 'OFFLINE' ? 'ONLINE' : 'OFFLINE'}
+              </span>
+           </div>
+        </div>
+      </div>
+
+      {/* Current Trip */}
+      <div className="bg-surface p-6 rounded-2xl border border-border shadow-md">
+        <h2 className="text-[10px] font-black text-muted uppercase tracking-widest mb-4">Current Trip</h2>
+        {activeRoute ? (
+          <div className="space-y-4">
+            <div className="relative pl-6 border-l-2 border-surface2">
+               <div className="absolute -left-[5px] top-0 w-2 h-2 rounded-full bg-yellow-500" />
+               <p className="text-sm font-bold">Delhi Hub</p>
+               <div className="h-6" />
+               <div className="absolute -left-[5px] bottom-1 w-2 h-2 rounded-full bg-primary" />
+               <p className="text-sm font-bold">{currentStop?.delivery_point?.name || 'Destination'}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
+               <div>
+                 <p className="text-[10px] text-muted uppercase tracking-widest">ETA</p>
+                 <p className="font-black text-lg">4h 15m</p>
+               </div>
+               <div>
+                 <p className="text-[10px] text-muted uppercase tracking-widest">Distance</p>
+                 <p className="font-black text-lg">245 km</p>
+               </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-muted">No active trips assigned.</p>
+        )}
+      </div>
+
+      {/* Live Vehicle Status */}
+      <div className="bg-surface p-6 rounded-2xl border border-border shadow-md">
+        <h2 className="text-[10px] font-black text-muted uppercase tracking-widest mb-4">Live Vehicle Status</h2>
+        <div className="grid grid-cols-2 gap-y-4">
+           <div>
+             <p className="text-xs text-muted mb-1">Speed</p>
+             <p className="font-black text-lg">{shiftStatus === 'ON_MISSION' ? '48' : '0'} km/h</p>
+           </div>
+           <div>
+             <p className="text-xs text-muted mb-1">GPS</p>
+             <p className="font-bold text-success flex items-center gap-1"><CheckCircle2 size={14}/> Connected</p>
+           </div>
+           <div>
+             <p className="text-xs text-muted mb-1">Battery</p>
+             <p className="font-bold">84%</p>
+           </div>
+           <div>
+             <p className="text-xs text-muted mb-1">Last Update</p>
+             <p className="font-bold">5 sec ago</p>
+           </div>
+        </div>
+      </div>
+
+      {/* Cargo Details */}
+      <div className="bg-surface p-6 rounded-2xl border border-border shadow-md">
+        <h2 className="text-[10px] font-black text-muted uppercase tracking-widest mb-4">Cargo Details</h2>
+        <div className="space-y-2 text-sm">
+           <div className="flex justify-between"><span className="text-muted">Shipment</span><span className="font-bold uppercase">SHP-001</span></div>
+           <div className="flex justify-between"><span className="text-muted">Weight</span><span className="font-bold">10 Tons</span></div>
+           <div className="flex justify-between"><span className="text-muted">Type</span><span className="font-bold">Electronics</span></div>
+           <div className="flex justify-between"><span className="text-muted">Delivery Slots</span><span className="font-bold">3</span></div>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="bg-surface p-6 rounded-2xl border border-border shadow-md">
+        <h2 className="text-[10px] font-black text-muted uppercase tracking-widest mb-4">Actions</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <button 
+            onClick={() => {
+              if (shiftStatus === 'OFFLINE') { setShiftStatus('ON_DUTY'); toast.success('Online'); }
+              else { setShiftStatus('ON_MISSION'); toast.success('Trip Started'); setIsSimulating(true); }
+            }}
+            className="flex flex-col items-center justify-center p-4 rounded-xl bg-success/10 text-success font-black text-[10px] uppercase tracking-widest hover:bg-success/20 transition-all"
+          >
+            <Play size={20} className="mb-2" /> Start Trip
+          </button>
+          <button 
+            onClick={() => { setShiftStatus('ON_DUTY'); setIsSimulating(false); toast('Trip Paused'); }}
+            className="flex flex-col items-center justify-center p-4 rounded-xl bg-yellow-500/10 text-yellow-500 font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500/20 transition-all"
+          >
+            <Pause size={20} className="mb-2" /> Pause Trip
+          </button>
+          <button 
+            onClick={() => toast.success('Delay reported to Control Tower')}
+            className="flex flex-col items-center justify-center p-4 rounded-xl bg-orange-500/10 text-orange-500 font-black text-[10px] uppercase tracking-widest hover:bg-orange-500/20 transition-all"
+          >
+            <AlertTriangle size={20} className="mb-2" /> Report Delay
+          </button>
+          <button 
+            onClick={() => setActiveTab('deliveries')}
+            className="flex flex-col items-center justify-center p-4 rounded-xl bg-primary/10 text-primary font-black text-[10px] uppercase tracking-widest hover:bg-primary/20 transition-all"
+          >
+            <CheckCircle2 size={20} className="mb-2" /> Complete Delivery
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderNav = () => (
+    <DriverMap 
+      currentLat={liveLocation.lat} 
+      currentLng={liveLocation.lng} 
+      targetLat={currentStop?.delivery_point?.lat || 28.61} 
+      targetLng={currentStop?.delivery_point?.lng || 77.23} 
+      shiftStatus={shiftStatus} 
+      speed={shiftStatus === 'ON_MISSION' ? 48 : 0} 
+    />
+  );
+
+  const renderDeliveries = () => (
+    <div className="space-y-6 pb-24">
+       {currentStop ? (
+         <div className="bg-surface p-6 rounded-2xl border border-border shadow-md">
+           <h2 className="text-[10px] font-black text-yellow-500 uppercase tracking-widest mb-4">Delivery Stop #2</h2>
+           <div className="space-y-3 mb-6">
+              <div><p className="text-xs text-muted uppercase">Customer</p><p className="font-bold text-lg">ABC Pvt Ltd</p></div>
+              <div><p className="text-xs text-muted uppercase">Contact</p><p className="font-bold text-lg text-primary">98xxxxxx12</p></div>
+              <div><p className="text-xs text-muted uppercase">Address</p><p className="font-bold">{currentStop.delivery_point?.address || 'Jaipur Hub'}</p></div>
+           </div>
+           
+           <div className="grid grid-cols-2 gap-3 mb-6">
+              <button className="h-12 bg-surface2 rounded-xl flex items-center justify-center gap-2 text-xs font-bold uppercase"><Phone size={14}/> Call Customer</button>
+              <button onClick={() => setActiveTab('nav')} className="h-12 bg-primary/20 text-primary rounded-xl flex items-center justify-center gap-2 text-xs font-bold uppercase"><MapIcon size={14}/> Navigate</button>
+           </div>
+
+           <hr className="border-border mb-6" />
+
+           <div className="space-y-4">
+              <div>
+                <label className="text-xs text-muted uppercase mb-1 block">Recipient Name</label>
+                <input 
+                  type="text" 
+                  value={recipientName}
+                  onChange={e => setRecipientName(e.target.value)}
+                  className="w-full h-12 bg-surface2 border border-border rounded-xl px-4 text-sm outline-none focus:border-yellow-500" 
+                  placeholder="Enter name"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted uppercase mb-1 block">Proof of Delivery (Signature)</label>
+                <SignaturePad onSave={setSignature} />
+              </div>
+              <button 
+                 onClick={finalizeDelivery}
+                 disabled={!signature || updateStatus.isPending}
+                 className="w-full h-14 bg-success text-bg rounded-xl font-black uppercase text-sm disabled:opacity-50 mt-4 shadow-lg shadow-success/20 active:scale-95 transition-all"
+              >
+                 {updateStatus.isPending ? <Loader2 className="animate-spin mx-auto" /> : 'Mark Delivered & Upload POD'}
+              </button>
+           </div>
+         </div>
+       ) : (
+         <div className="bg-surface p-10 rounded-2xl border border-border text-center shadow-md">
+            <CheckCircle2 size={40} className="text-success mx-auto mb-4" />
+            <h2 className="font-black text-xl uppercase">All Done!</h2>
+            <p className="text-muted text-sm mt-2">No pending deliveries right now.</p>
+         </div>
+       )}
+    </div>
+  );
+
+  const renderAlerts = () => (
+    <div className="space-y-6 pb-24">
+      <div className="bg-error/10 p-6 rounded-2xl border border-error/20 shadow-md">
+        <h2 className="text-[10px] font-black text-error uppercase tracking-widest mb-4 flex items-center gap-2"><ShieldAlert size={14}/> Alert Center</h2>
+        <p className="text-sm text-text mb-6">Report critical emergencies immediately. This notifies the Control Tower and initiates emergency protocols.</p>
+        
+        <div className="space-y-3">
+          <button onClick={() => toast.success('SOS Sent')} className="w-full p-4 bg-surface2 rounded-xl flex items-center gap-3 font-bold hover:bg-error/20 hover:text-error transition-all"><AlertTriangle size={18}/> Vehicle Breakdown</button>
+          <button onClick={() => toast.success('SOS Sent')} className="w-full p-4 bg-surface2 rounded-xl flex items-center gap-3 font-bold hover:bg-error/20 hover:text-error transition-all"><AlertTriangle size={18}/> Accident</button>
+          <button onClick={() => toast.success('SOS Sent')} className="w-full p-4 bg-surface2 rounded-xl flex items-center gap-3 font-bold hover:bg-error/20 hover:text-error transition-all"><AlertTriangle size={18}/> Route Blocked</button>
+          <button onClick={() => toast.success('SOS Sent')} className="w-full p-4 bg-surface2 rounded-xl flex items-center gap-3 font-bold hover:bg-error/20 hover:text-error transition-all"><AlertTriangle size={18}/> Medical Emergency</button>
+        </div>
+
+        <button onClick={() => toast.error('Initiating general SOS')} className="w-full mt-6 h-14 bg-error text-white font-black uppercase text-sm rounded-xl shadow-xl shadow-error/20 active:scale-95 transition-transform">
+           Send SOS
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderProfile = () => (
+    <div className="space-y-6 pb-24">
+      <div className="bg-surface p-6 rounded-2xl border border-border flex items-center gap-4 shadow-md">
+         <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center">
+            <User size={32} className="text-primary" />
+         </div>
+         <div>
+            <h2 className="font-black text-xl">Rahul Kumar</h2>
+            <p className="text-muted text-sm uppercase">Driver ID: D-8492</p>
+         </div>
+      </div>
+      
+      <div className="bg-surface p-6 rounded-2xl border border-border shadow-md space-y-4">
+         <h3 className="text-[10px] font-black text-muted uppercase tracking-widest">Shift Controls</h3>
+         <button 
+           onClick={() => { setShiftStatus('OFFLINE'); setIsSimulating(false); toast.success('Shift Ended') }}
+           className="w-full h-14 bg-error/10 text-error font-black uppercase text-xs rounded-xl shadow-md active:scale-95 transition-transform"
+         >
+            End Shift & Logout
+         </button>
+      </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-surface2 text-text font-sans selection:bg-yellow-500 pb-24 select-none">
-      {/* Dynamic Header */}
-      <div className="p-8 border-b border-border bg-surface/40 backdrop-blur-2xl sticky top-0 z-[60]">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 transition-all ${
-              shiftStatus === 'OFFLINE' ? 'border-error/20 bg-error/5 text-error' : 
-              shiftStatus === 'ON_DUTY' ? 'border-primary bg-primary text-bg' : 
-              'border-success bg-success/20 text-success animate-pulse'
-            }`}>
-              <Truck size={24} />
-            </div>
-            <div>
-              <h1 className="text-xl font-black tracking-tighter uppercase leading-none">
-                Nexus<span className="text-primary">Drive</span> <span className="text-[10px] font-bold text-muted ml-1">v3.2</span>
-              </h1>
-              <div className="flex items-center gap-2 mt-1.5">
-                <div className={`w-1.5 h-1.5 rounded-full ${shiftStatus === 'OFFLINE' ? 'bg-slate-600' : 'bg-success animate-pulse shadow-[0_0_8px_var(--success)]'}`} />
-                <p className="text-[9px] font-black text-muted uppercase tracking-widest">{shiftStatus} // FREQ: 5s</p>
-              </div>
-            </div>
-          </div>
-          <button 
-            onClick={handleShiftToggle}
-            className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${
-              shiftStatus === 'OFFLINE' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-red-500/10 border-red-500/20 text-red-500'
-            }`}
-          >
-            {shiftStatus === 'OFFLINE' ? 'Start Shift' : 'End Shift'}
-          </button>
-        </div>
+    <div className="min-h-screen bg-[#09090b] text-text font-sans selection:bg-primary sm:max-w-md sm:mx-auto sm:border-x sm:border-border sm:shadow-2xl relative">
+      
+      {/* Top Bar */}
+      <div className="h-16 border-b border-border bg-surface/80 backdrop-blur-md sticky top-0 z-50 flex items-center justify-center">
+         <h1 className="text-lg font-black tracking-tighter uppercase italic">
+            Route<span className="text-primary">IQ</span> <span className="text-xs font-bold text-muted ml-1 font-sans not-italic">Driver</span>
+         </h1>
       </div>
 
-      <div className="p-8 space-y-8 max-w-lg mx-auto">
-        {/* Mission Status / Control */}
-        {shiftStatus === 'OFFLINE' ? (
-          <div className="p-10 rounded-[3rem] bg-surface border border-border text-center space-y-6">
-            <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto border border-border shadow-2xl">
-              <Shield size={32} className="text-muted" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-black uppercase tracking-tighter italic">Fleet Connection <span className="text-muted">Severed</span></h2>
-              <p className="text-muted text-xs font-bold mt-2 uppercase tracking-widest leading-relaxed">Start your shift to begin high-frequency telemetry tracking.</p>
-            </div>
-          </div>
-        ) : !activeRoute ? (
-          <div className="p-10 rounded-[3rem] bg-surface border border-border text-center space-y-6">
-            <div className="w-20 h-20 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto border border-yellow-500/20 shadow-2xl">
-               <Package size={32} className="text-yellow-500" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-black uppercase tracking-tighter italic">Queue <span className="text-yellow-500">Empty</span></h2>
-              <p className="text-muted text-xs font-bold mt-2 uppercase tracking-widest">Base is currently optimizing new routes. Standing by...</p>
-            </div>
-          </div>
-        ) : shiftStatus === 'ON_DUTY' ? (
-          <div className="p-10 rounded-[3rem] bg-surface border border-border space-y-8 shadow-2xl relative overflow-hidden group">
-            <div className="absolute -top-10 -right-10 opacity-5 group-hover:scale-125 transition-transform duration-700">
-               <Truck size={200} />
-            </div>
-            <div className="relative z-10 text-center">
-                    <span className="px-5 py-2 rounded-full bg-primary text-bg text-[10px] font-black uppercase tracking-widest">New Manifest</span>
-                    <h2 className="text-4xl font-black mt-6 tracking-tight leading-none uppercase italic">Mission <span className="text-primary">Ready</span></h2>
-                    <p className="text-muted font-bold mt-4 uppercase text-xs tracking-widest">{stops.length} Waypoints • {activeRoute.total_distance_km?.toFixed(1)} KM Total</p>
-                    
-                    <button 
-                      onClick={handleStartMission}
-                      className="w-full mt-10 h-20 bg-white text-bg rounded-[2rem] flex items-center justify-center gap-4 font-black uppercase tracking-[0.2em] text-sm hover:bg-primary transition-all shadow-2xl hover:scale-[1.02] active:scale-95"
-                    >
-                      <Play className="fill-current text-primary group-hover:text-bg transition-colors" /> Start Mission
-                    </button>
-            </div>
-          </div>
-        ) : (
-          /* Active Mission View */
-          <div className="space-y-6">
-            <div className="p-10 rounded-[3rem] bg-yellow-500 text-black shadow-2xl shadow-yellow-500/20 relative overflow-hidden">
-               <div className="absolute top-0 right-0 p-10 opacity-10">
-                  <Navigation className="w-32 h-32" />
-               </div>
-               <div className="relative z-10">
-                  <div className="flex justify-between items-start">
-                    <span className="px-4 py-1.5 rounded-full bg-bg text-yellow-500 text-[9px] font-black uppercase tracking-widest flex items-center gap-2">
-                       <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" />
-                       Navigating
-                    </span>
-                    <div className="text-[10px] font-black uppercase">WP #{currentStop?.sequence + 1 || 0}</div>
-                  </div>
-                  <h2 className="text-3xl font-black mt-6 leading-none tracking-tighter uppercase italic">{currentStop?.delivery_point?.name || 'In Transit'}</h2>
-                  <p className="text-black/70 font-bold mt-2 text-lg leading-tight">{currentStop?.delivery_point?.address}</p>
-                  
-                  <div className="mt-10 flex gap-3">
-                     <button 
-                        onClick={() => window.open(`${import.meta.env.VITE_GOOGLE_MAPS_BASE_URL}/maps/dir/?api=1&destination=${encodeURIComponent(currentStop?.delivery_point?.address || '')}`, '_blank')}
-                        className="flex-1 h-16 bg-bg text-text rounded-2xl flex items-center justify-center gap-3 font-black uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all"
-                     >
-                        <Map size={18} className="text-yellow-500" /> Maps
-                     </button>
-                     <button 
-                        onClick={() => setIsSimulating(!isSimulating)}
-                        className={`flex-1 h-16 rounded-2xl flex items-center justify-center gap-2 font-black uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all ${
-                          isSimulating ? 'bg-yellow-500 text-black border-2 border-black' : 'bg-surface2 text-muted border border-border'
-                        }`}
-                     >
-                        <Zap size={18} className={isSimulating ? 'fill-current' : ''} /> {isSimulating ? 'Sim Active' : 'Simulate'}
-                     </button>
-                     <button 
-                        onClick={() => setShowPOD(true)}
-                        className="w-20 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center hover:bg-white/40 transition-all border border-black/5"
-                     >
-                        <CheckCircle2 size={24} />
-                     </button>
-                  </div>
-               </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="grid grid-cols-2 gap-3">
-               <button 
-                 onClick={() => {
-                   telemetryAPI.logStoppage({ vehicle_id: activeRoute.vehicle_id, lat: 0, lng: 0, reason: 'Traffic' });
-                   toast.success('Hurdle reported');
-                 }}
-                 className="h-16 rounded-[1.5rem] bg-surface border border-border flex items-center justify-center gap-3 font-black text-[10px] uppercase tracking-widest text-muted hover:text-text transition-all"
-               >
-                 <AlertTriangle size={16} className="text-orange-500" /> Traffic Gap
-               </button>
-               <button className="h-16 rounded-[1.5rem] bg-surface border border-border flex items-center justify-center gap-3 font-black text-[10px] uppercase tracking-widest text-muted hover:text-text transition-all">
-                 <Phone size={16} className="text-sky-500" /> Support
-               </button>
-            </div>
-          </div>
-        )}
-
-        {/* Detailed Manifest Queue */}
-        {shiftStatus !== 'OFFLINE' && activeRoute && (
-          <div className="animate-in slide-in-from-bottom duration-500">
-             <h3 className="text-[10px] font-black text-muted uppercase tracking-[0.4em] mb-6 flex items-center gap-4">
-                Manifest Queue
-                <div className="flex-1 h-px bg-surface2" />
-             </h3>
-             <div className="space-y-3">
-                {stops.map((stop: any, idx: number) => {
-                  const isCompleted = stop.status === 'completed';
-                  const isActive = stop.id === activeStopId;
-
-                  return (
-                    <div 
-                      key={stop.id}
-                      onClick={() => !isCompleted && setActiveStopId(stop.id)}
-                      className={`p-6 rounded-[2rem] border transition-all cursor-pointer flex items-center justify-between ${
-                        isActive ? 'bg-surface border-yellow-500/50 shadow-2xl' : 
-                        isCompleted ? 'bg-emerald-500/5 border-emerald-500/10' : 
-                        'bg-surface/30 border-border'
-                      }`}
-                    >
-                       <div className="flex items-center gap-5">
-                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black ${
-                            isActive ? 'bg-yellow-500 text-black' : 
-                            isCompleted ? 'bg-emerald-500/20 text-emerald-500' : 
-                            'bg-slate-800 text-muted'
-                          }`}>
-                            {idx + 1}
-                          </div>
-                          <div>
-                             <h4 className={`text-sm font-black uppercase tracking-tight ${isCompleted ? 'text-muted line-through' : 'text-text'}`}>
-                                {stop.delivery_point?.name}
-                             </h4>
-                             <p className="text-[9px] font-bold text-muted uppercase tracking-widest mt-1">
-                                {isCompleted ? 'Archived Waypoint' : 'Pending Verification'}
-                             </p>
-                          </div>
-                       </div>
-                       {isCompleted && <CheckCircle2 size={16} className="text-emerald-500" />}
-                       {isActive && <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-ping" />}
-                    </div>
-                  );
-                })}
-             </div>
-          </div>
-        )}
+      {/* Main Content Area */}
+      <div className="p-4 h-[calc(100vh-128px)] overflow-y-auto">
+         {activeTab === 'home' && renderHome()}
+         {activeTab === 'nav' && renderNav()}
+         {activeTab === 'deliveries' && renderDeliveries()}
+         {activeTab === 'alerts' && renderAlerts()}
+         {activeTab === 'profile' && renderProfile()}
       </div>
 
-      {/* POD MODAL */}
-      {showPOD && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-surface2/90 backdrop-blur-xl transition-all">
-          <div className="w-full max-w-lg bg-surface border border-border rounded-[3rem] p-10 shadow-2xl animate-in slide-in-from-bottom duration-300">
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-black uppercase tracking-tighter italic">Proof of <span className="text-yellow-500">Delivery</span></h2>
-              <button 
-                onClick={() => setShowPOD(false)}
-                className="w-10 h-10 rounded-full hover:bg-surface2 flex items-center justify-center transition-colors"
-              >
-                <Square size={16} className="text-muted rotate-45" />
-              </button>
+      {/* AI Suggestion Overlay (Simulated) */}
+      {aiAlertVisible && (
+         <div className="absolute inset-x-4 bottom-24 p-6 bg-primary/10 border-2 border-primary rounded-2xl backdrop-blur-xl shadow-[0_0_40px_rgba(79,172,254,0.3)] z-50 animate-in slide-in-from-bottom">
+            <div className="flex items-center gap-3 mb-4">
+               <Zap className="text-primary animate-pulse" />
+               <h3 className="font-black text-primary uppercase tracking-widest text-sm">Nexus AI</h3>
             </div>
-
-            <div className="space-y-8">
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-muted uppercase tracking-widest px-2">Recipient Proxy</label>
-                <input 
-                  type="text"
-                  placeholder="Legal Name"
-                  value={recipientName}
-                  onChange={e => setRecipientName(e.target.value)}
-                  className="w-full h-18 bg-surface2/50 border border-border rounded-[1.5rem] px-8 text-sm focus:outline-none focus:border-yellow-500 transition-all font-black placeholder:text-slate-700 h-16"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-muted uppercase tracking-widest px-2">Biometric Signature Equivalent</label>
-                <SignaturePad onSave={setSignature} />
-              </div>
-
-              <div className="pt-4">
-                 <button 
-                    onClick={finalizeDelivery}
-                    disabled={!signature || !recipientName || updateStatus.isPending}
-                    className="w-full h-20 bg-white text-black font-black uppercase tracking-[0.3em] text-[11px] rounded-[2rem] flex items-center justify-center gap-4 disabled:opacity-10 transition-all shadow-2xl hover:bg-yellow-500 active:scale-95"
-                 >
-                    {updateStatus.isPending ? <Loader2 className="animate-spin" /> : <Zap size={18} className="fill-current" />}
-                    Verify & Finalize Mission
-                 </button>
-                 <p className="text-[8px] text-center text-slate-700 font-bold uppercase mt-6 tracking-widest">Tamper-evident log will be anchored to the IQ Ledger</p>
-              </div>
+            <p className="font-bold text-white leading-tight mb-2">Heavy traffic ahead. Alternative route available.</p>
+            <p className="text-xs text-primary font-bold uppercase tracking-widest mb-6">Time Saved: 32 mins</p>
+            
+            <div className="flex gap-3">
+               <button onClick={() => setAiAlertVisible(false)} className="flex-1 h-12 bg-primary text-bg font-black uppercase text-xs rounded-xl">Accept Route</button>
+               <button onClick={() => setAiAlertVisible(false)} className="flex-1 h-12 bg-surface2 font-black uppercase text-xs rounded-xl">Ignore</button>
             </div>
-          </div>
-        </div>
+         </div>
       )}
 
-      <style>{`
-        body { background: #020617; }
-        ::-webkit-scrollbar { display: none; }
-      `}</style>
+      {/* Bottom Tab Bar */}
+      <div className="h-20 bg-surface border-t border-border sticky bottom-0 z-50 flex items-center justify-around px-2">
+         <TabButton active={activeTab === 'home'} icon={<Home size={22} />} label="Home" onClick={() => setActiveTab('home')} />
+         <TabButton active={activeTab === 'nav'} icon={<MapIcon size={22} />} label="Nav" onClick={() => setActiveTab('nav')} />
+         <TabButton active={activeTab === 'deliveries'} icon={<Package size={22} />} label="Deliveries" onClick={() => setActiveTab('deliveries')} />
+         <TabButton active={activeTab === 'alerts'} icon={<Bell size={22} />} label="Alerts" onClick={() => setActiveTab('alerts')} />
+         <TabButton active={activeTab === 'profile'} icon={<User size={22} />} label="Profile" onClick={() => setActiveTab('profile')} />
+      </div>
     </div>
   );
 }
 
+function TabButton({ active, icon, label, onClick }: { active: boolean, icon: any, label: string, onClick: () => void }) {
+  return (
+    <button 
+       onClick={onClick}
+       className={`flex flex-col items-center justify-center w-16 h-16 rounded-xl transition-all ${active ? 'text-primary' : 'text-muted hover:text-white'}`}
+    >
+       <div className={`${active ? 'scale-110 mb-1' : 'mb-1'} transition-transform`}>{icon}</div>
+       <span className="text-[9px] font-bold uppercase tracking-wider">{label}</span>
+    </button>
+  );
+}

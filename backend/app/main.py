@@ -28,12 +28,30 @@ async def lifespan(app: FastAPI):
     """Application startup and shutdown lifecycle."""
     setup_logging()
 
-    # Create DB tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Create DB tables (retry on transient asyncpg connection errors)
+    import logging as _logging
+    for _attempt in range(5):
+        try:
+            async with engine.connect() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+                await conn.commit()
+            break
+        except Exception as _e:
+            _logging.getLogger("uvicorn").warning(
+                f"DB startup attempt {_attempt + 1}/5 failed: {_e}. Retrying..."
+            )
+            if _attempt == 4:
+                raise
+            await asyncio.sleep(2)
 
-    # Connect Redis
-    await redis_client.ping()
+    # Connect Redis (non-fatal — app works without cache)
+    try:
+        await redis_client.ping()
+        import logging
+        logging.getLogger("uvicorn").info("Redis connected successfully")
+    except Exception as e:
+        import logging
+        logging.getLogger("uvicorn").warning(f"Redis unavailable: {e}. Continuing without cache.")
 
     # Start Fleet Health Monitoring
     from app.services.fleet_health import fleet_health_monitor
@@ -57,7 +75,7 @@ app = FastAPI(
     title=settings.APP_NAME,
     openapi_url="/api/v1/openapi.json",
     lifespan=lifespan,
-    redirect_slashes=True,  # Allow trailing slash handling
+    redirect_slashes=True,
 )
 
 # Middleware (order matters — outermost first)
